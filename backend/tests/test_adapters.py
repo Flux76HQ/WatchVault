@@ -271,5 +271,83 @@ def test_jellyfin_library_scoped_queries(monkeypatch):
     assert {e.clean_title for e in events} == {"Movie libA", "Movie libB"}
 
 
+def test_trakt_exchange_pin_returns_tokens(monkeypatch):
+    from app.ingest.adapters import trakt
+    captured = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        captured["url"] = url
+        captured["body"] = json
+        return _FakeResp(payload={
+            "access_token": "acc", "refresh_token": "ref",
+            "created_at": 1_000_000, "expires_in": 7776000,
+        })
+
+    monkeypatch.setattr(trakt.requests, "post", fake_post)
+    tokens = trakt.exchange_pin("cid", "secret", "  PIN123  ")
+    assert tokens == {"access_token": "acc", "refresh_token": "ref",
+                      "token_expires_at": 1_000_000 + 7776000}
+    assert captured["url"].endswith("/oauth/token")
+    assert captured["body"]["grant_type"] == "authorization_code"
+    assert captured["body"]["code"] == "PIN123"
+    assert captured["body"]["client_secret"] == "secret"
+
+
+def test_trakt_exchange_pin_bad_pin_raises(monkeypatch):
+    from app.ingest.adapters import trakt
+    monkeypatch.setattr(trakt.requests, "post",
+                        lambda *a, **k: _FakeResp(status_code=400, payload={}))
+    with pytest.raises(ValueError):
+        trakt.exchange_pin("cid", "secret", "bad")
+
+
+def test_trakt_prepare_config_refreshes_when_expired(monkeypatch):
+    from app.ingest.adapters import trakt
+    calls = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        calls["grant"] = json["grant_type"]
+        return _FakeResp(payload={
+            "access_token": "new-acc", "refresh_token": "new-ref",
+            "created_at": 2_000_000, "expires_in": 7776000,
+        })
+
+    monkeypatch.setattr(trakt.requests, "post", fake_post)
+    adapter = trakt.TraktAdapter()
+    cfg = {"client_id": "cid", "client_secret": "secret",
+           "refresh_token": "ref", "access_token": "old", "token_expires_at": 1}
+    new_cfg, changed = adapter.prepare_config(cfg)
+    assert changed is True
+    assert calls["grant"] == "refresh_token"
+    assert new_cfg["access_token"] == "new-acc"
+    assert new_cfg["refresh_token"] == "new-ref"
+    assert new_cfg["token_expires_at"] == 2_000_000 + 7776000
+
+
+def test_trakt_prepare_config_noop_when_fresh(monkeypatch):
+    import time as _time
+    from app.ingest.adapters import trakt
+
+    def boom(*a, **k):
+        raise AssertionError("should not refresh a fresh token")
+
+    monkeypatch.setattr(trakt.requests, "post", boom)
+    adapter = trakt.TraktAdapter()
+    cfg = {"client_id": "cid", "client_secret": "secret", "refresh_token": "ref",
+           "access_token": "ok", "token_expires_at": int(_time.time()) + 10_000_000}
+    new_cfg, changed = adapter.prepare_config(cfg)
+    assert changed is False
+    assert new_cfg is cfg
+
+
+def test_trakt_prepare_config_noop_without_secret():
+    from app.ingest.adapters import trakt
+    adapter = trakt.TraktAdapter()
+    cfg = {"client_id": "cid", "access_token": "ok"}
+    new_cfg, changed = adapter.prepare_config(cfg)
+    assert changed is False
+    assert new_cfg is cfg
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

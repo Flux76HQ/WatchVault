@@ -151,6 +151,24 @@ def ingest_events(user_id: str, provider_id: str, source_connection_id: str | No
     }
 
 
+def clear_connection_events(source_connection_id: str | None) -> int:
+    """Remove every watch event imported by one connection (the 'wipe this source'
+    action). Hard-deletes the rows and rebuilds the daily aggregate. The connection
+    and its cursor are left intact, so the cleared history is not re-pulled on the
+    next sync — only genuinely new watches are added going forward. Returns the count."""
+    if not source_connection_id:
+        return 0
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM watch_events WHERE source_connection_id = %s RETURNING id",
+            (source_connection_id,),
+        )
+        removed = len(cur.fetchall())
+        if removed:
+            cur.execute("SELECT wv_rebuild_daily_agg()")
+    return removed
+
+
 def prune_connection_libraries(source_connection_id: str | None, raw_key: str,
                                selected: set[str] | list[str]) -> int:
     """Remove a connection's watch events that came from libraries no longer in the

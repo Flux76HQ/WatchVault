@@ -44,3 +44,12 @@ class SourceAdapter:
         """
         return None
 
+    def prepare_config(self, config: dict) -> tuple[dict, bool]:
+        """Hook to refresh/rotate credentials right before a sync.
+
+        Returns ``(config, changed)``. When ``changed`` is True the caller persists
+        the returned config back to the connection (e.g. rotated OAuth tokens).
+        Adapters with static credentials keep the default (no change).
+        """
+        return config, False
+
