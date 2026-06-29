@@ -56,8 +56,10 @@ class TraktAdapter(SourceAdapter):
         {"key": "username", "label": "Username", "type": "text", "required": True,
          "placeholder": "me", "help": "Your Trakt username, or 'me' when using an access token."},
         {"key": "access_token", "label": "Access token", "type": "password", "required": False,
-         "placeholder": "OAuth access token (private history only)",
-         "help": "Only needed if your Trakt profile/history is private."},
+         "placeholder": "OAuth access token (recommended)",
+         "help": "Recommended: Trakt profiles are private by default. With a token, your own "
+                 "history (including private) is synced via /sync/history. Without one, only a "
+                 "public profile works."},
     ]
 
     def fetch_history(self, config: dict, cursor: dict) -> tuple[list[NormalizedEvent], dict]:
@@ -72,8 +74,14 @@ class TraktAdapter(SourceAdapter):
             "trakt-api-version": "2",
             "trakt-api-key": client_id,
         }
+        # With an OAuth token, read the authenticated user's own history via /sync/history.
+        # This works for private profiles and avoids username/slug mismatches. Without a
+        # token, fall back to the public /users/{username}/history (public profiles only).
         if access_token:
             headers["Authorization"] = f"Bearer {access_token}"
+            url = f"{API_BASE}/sync/history"
+        else:
+            url = f"{API_BASE}/users/{username}/history"
 
         since = _parse_iso(cursor.get("since")) or dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
 
@@ -82,7 +90,7 @@ class TraktAdapter(SourceAdapter):
         page = 1
         while page <= MAX_PAGES:
             resp = requests.get(
-                f"{API_BASE}/users/{username}/history",
+                url,
                 params={
                     "page": page,
                     "limit": PAGE_LIMIT,
@@ -92,6 +100,11 @@ class TraktAdapter(SourceAdapter):
                 headers=headers,
                 timeout=30,
             )
+            if resp.status_code in (401, 403):
+                raise ValueError(
+                    "Trakt returned 401/403 — your watch history is private. Add an OAuth "
+                    "access token to this connection (and set username to 'me'), or make your "
+                    "Trakt profile/history public.")
             resp.raise_for_status()
             rows = resp.json() or []
             if not rows:

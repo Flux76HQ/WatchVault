@@ -100,10 +100,11 @@ def test_trakt_event_mapping():
 
 
 class _FakeResp:
-    def __init__(self, *, content: bytes = b"", payload=None, headers=None):
+    def __init__(self, *, content: bytes = b"", payload=None, headers=None, status_code=200):
         self.content = content
         self._payload = payload
         self.headers = headers or {}
+        self.status_code = status_code
 
     def raise_for_status(self):
         pass
@@ -142,6 +143,110 @@ def test_plex_list_libraries(monkeypatch):
     libs = plex.PlexAdapter().list_libraries({"base_url": "http://x", "token": "t"})
     assert {l["name"] for l in libs} == {"Movies", "TV"}
     assert {l["id"] for l in libs} == {"1", "2"}
+
+
+def test_plex_resolves_account_username_to_numeric_id(monkeypatch):
+    from app.ingest.adapters import plex
+    accounts_xml = (b'<MediaContainer>'
+                    b'<Account id="1" name="TheVMaster"/>'
+                    b'<Account id="2" name="Kids"/>'
+                    b'</MediaContainer>')
+    history_xml = (b'<MediaContainer>'
+                   b'<Video type="movie" title="M" year="2024" viewedAt="100" '
+                   b'duration="6000000" ratingKey="a"/>'
+                   b'</MediaContainer>')
+    seen = {}
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        if url.endswith("/accounts"):
+            return _FakeResp(content=accounts_xml)
+        if url.endswith("/history/all"):
+            seen["accountID"] = (params or {}).get("accountID")
+        return _FakeResp(content=history_xml)
+
+    monkeypatch.setattr(plex.requests, "get", fake_get)
+    plex.PlexAdapter().fetch_history(
+        {"base_url": "http://x", "token": "t", "account_id": "thevmaster"}, {})
+    assert seen["accountID"] == "1"
+
+
+def test_plex_unknown_account_raises(monkeypatch):
+    from app.ingest.adapters import plex
+    accounts_xml = b'<MediaContainer><Account id="1" name="TheVMaster"/></MediaContainer>'
+    monkeypatch.setattr(plex.requests, "get",
+                        lambda *a, **k: _FakeResp(content=accounts_xml))
+    with pytest.raises(ValueError):
+        plex.PlexAdapter().fetch_history(
+            {"base_url": "http://x", "token": "t", "account_id": "nobody"}, {})
+
+
+def test_trakt_uses_sync_history_with_token(monkeypatch):
+    from app.ingest.adapters import trakt
+    seen = {}
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        seen["url"] = url
+        seen["auth"] = (headers or {}).get("Authorization")
+        return _FakeResp(payload=[], headers={"X-Pagination-Page-Count": "1"})
+
+    monkeypatch.setattr(trakt.requests, "get", fake_get)
+    trakt.TraktAdapter().fetch_history(
+        {"client_id": "c", "username": "helmer", "access_token": "tok"}, {})
+    assert seen["url"].endswith("/sync/history")
+    assert seen["auth"] == "Bearer tok"
+
+
+def test_trakt_private_history_raises_clear_error(monkeypatch):
+    from app.ingest.adapters import trakt
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        return _FakeResp(payload=[], headers={}, status_code=401)
+
+    monkeypatch.setattr(trakt.requests, "get", fake_get)
+    with pytest.raises(ValueError, match="private"):
+        trakt.TraktAdapter().fetch_history(
+            {"client_id": "c", "username": "helmer"}, {})
+
+
+def test_plex_tags_library_section(monkeypatch):
+    from app.ingest.adapters import plex
+    xml = (b'<MediaContainer>'
+           b'<Video type="movie" title="M" year="2024" viewedAt="100" '
+           b'librarySectionID="3" duration="6000000" ratingKey="a"/>'
+           b'</MediaContainer>')
+    monkeypatch.setattr(plex.requests, "get", lambda *a, **k: _FakeResp(content=xml))
+    events, _ = plex.PlexAdapter().fetch_history({"base_url": "http://x", "token": "t"}, {})
+    assert events[0].raw["librarySectionID"] == "3"
+
+
+def test_plex_prune_spec(monkeypatch):
+    from app.ingest.adapters import plex
+    adapter = plex.PlexAdapter()
+    assert adapter.library_prune_spec({}) is None
+    spec = adapter.library_prune_spec({"library_ids": ["1", "2"]})
+    assert spec == ("librarySectionID", {"1", "2"})
+
+
+def test_jellyfin_tags_library_and_prune_spec(monkeypatch):
+    from app.ingest.adapters import jellyfin
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        pid = (params or {}).get("ParentId")
+        return _FakeResp(payload={"Items": [{
+            "Id": f"item-{pid}", "Type": "Movie", "Name": f"Movie {pid}",
+            "ProductionYear": 2024, "RunTimeTicks": 60_000_000_000,
+            "UserData": {"LastPlayedDate": "2025-01-10T10:00:00.000Z", "Played": True},
+        }]})
+
+    monkeypatch.setattr(jellyfin.requests, "get", fake_get)
+    adapter = jellyfin.JellyfinAdapter()
+    events, _ = adapter.fetch_history(
+        {"base_url": "http://x", "api_key": "k", "user_id": "u",
+         "library_ids": ["libA"]}, {})
+    assert events[0].raw["library_id"] == "libA"
+    assert adapter.library_prune_spec(
+        {"library_ids": ["libA"]}) == ("library_id", {"libA"})
+    assert adapter.library_prune_spec({}) is None
 
 
 def test_jellyfin_library_scoped_queries(monkeypatch):

@@ -6,7 +6,7 @@ import json
 from flask import Blueprint, jsonify, request
 
 from ..db import execute, query_all, query_one
-from ..ingest import ingest_events
+from ..ingest import ingest_events, prune_connection_libraries
 from ..ingest.adapters import get_adapter
 from ..auth.sessions import current_user, require_perm
 from ._common import household_user_ids
@@ -106,6 +106,31 @@ def list_connections():
     ])
 
 
+@bp.get("/connections/<conn_id>/libraries")
+@require_perm("ingest.write")
+def connection_libraries(conn_id: str):
+    """List libraries for an existing connection using its stored credentials, plus
+    the currently selected subset — so the edit UI never has to handle secrets."""
+    user = current_user()
+    conn = query_one(
+        "SELECT sc.config, p.adapter FROM source_connections sc "
+        "JOIN providers p ON p.id = sc.provider_id "
+        "WHERE sc.id = %s AND sc.household_id = %s",
+        (conn_id, user["household_id"]),
+    )
+    if not conn:
+        return jsonify({"error": "not found"}), 404
+    config = conn["config"] or {}
+    try:
+        libraries = get_adapter(conn["adapter"]).list_libraries(config)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"could not load libraries: {exc}"}), 400
+    selected = config.get("library_ids") or []
+    if isinstance(selected, str):
+        selected = [selected]
+    return jsonify({"libraries": libraries, "selected": [str(s) for s in selected]})
+
+
 @bp.post("/connections/libraries")
 @require_perm("ingest.write")
 def discover_libraries():
@@ -142,6 +167,46 @@ def create_connection():
     return jsonify({"ok": True, "id": str(row["id"])})
 
 
+@bp.put("/connections/<conn_id>")
+@require_perm("ingest.write")
+def update_connection(conn_id: str):
+    """Edit a connection's name/config. When the selected library subset changes,
+    reset the sync cursor (so the next sync re-pulls and re-tags) and immediately
+    prune watch events that came from libraries that are no longer selected."""
+    user = current_user()
+    body = request.get_json(force=True, silent=True) or {}
+    conn = query_one(
+        "SELECT sc.*, p.adapter FROM source_connections sc "
+        "JOIN providers p ON p.id = sc.provider_id "
+        "WHERE sc.id = %s AND sc.household_id = %s",
+        (conn_id, user["household_id"]),
+    )
+    if not conn:
+        return jsonify({"error": "not found"}), 404
+
+    old_config = conn["config"] or {}
+    patch = body.get("config")
+    # Merge so the client can change just the library subset without resending secrets.
+    new_config = {**old_config, **patch} if isinstance(patch, dict) else old_config
+    name = body.get("name") or conn["name"]
+
+    libraries_changed = (old_config.get("library_ids") or []) != (new_config.get("library_ids") or [])
+    if libraries_changed:
+        # Forget the cursor so a full resync re-pulls every event and tags its
+        # library, then prune anything no longer in the selected subset right away.
+        execute("UPDATE source_connections SET name=%s, config=%s, cursor='{}'::jsonb WHERE id=%s",
+                (name, json.dumps(new_config), conn_id))
+    else:
+        execute("UPDATE source_connections SET name=%s, config=%s WHERE id=%s",
+                (name, json.dumps(new_config), conn_id))
+
+    pruned = 0
+    spec = get_adapter(conn["adapter"]).library_prune_spec(new_config)
+    if spec:
+        pruned = prune_connection_libraries(conn_id, spec[0], spec[1])
+    return jsonify({"ok": True, "pruned": pruned, "resync": libraries_changed})
+
+
 @bp.delete("/connections/<conn_id>")
 @require_perm("ingest.write")
 def delete_connection(conn_id: str):
@@ -175,6 +240,9 @@ def sync_connection(conn_id: str):
 
     summary = ingest_events(target, str(conn["provider_id"]), conn_id, events) if events else \
         {"inserted": 0, "duplicates": 0, "titles_created": 0}
+    spec = adapter.library_prune_spec(conn["config"])
+    if spec:
+        summary["pruned"] = prune_connection_libraries(conn_id, spec[0], spec[1])
     execute(
         "UPDATE source_connections SET cursor = %s, last_status = %s, last_sync_at = now() WHERE id = %s",
         (json.dumps(new_cursor), f"ok: +{summary['inserted']}", conn_id),

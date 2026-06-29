@@ -32,3 +32,15 @@ class SourceAdapter:
         source has no concept of libraries can leave the default (none).
         """
         return []
+
+    def library_prune_spec(self, config: dict) -> tuple[str, set[str]] | None:
+        """Describe how to prune watch events to the selected library subset.
+
+        Returns ``(raw_key, selected_ids)`` where ``raw_key`` is the JSON key each
+        event records its source library under (in ``raw``) and ``selected_ids`` is
+        the set of libraries to keep. Returns ``None`` when no subset is selected
+        (i.e. all libraries are kept, nothing to prune). Adapters without libraries
+        keep the default (no pruning).
+        """
+        return None
+

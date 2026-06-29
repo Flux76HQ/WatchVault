@@ -89,6 +89,44 @@ function Connections({ providers, connections, reload }: {
   const [busy, setBusy] = useState<string | null>(null);
   const [libs, setLibs] = useState<{ id: string; name: string; type?: string }[] | null>(null);
   const [libBusy, setLibBusy] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editLibs, setEditLibs] = useState<{ id: string; name: string; type?: string }[] | null>(null);
+  const [editSel, setEditSel] = useState<string[]>([]);
+  const [editBusy, setEditBusy] = useState(false);
+
+  function providerSupportsLibraries(key: string) {
+    return (apiProviders.find((p) => p.key === key)?.config_fields || [])
+      .some((f) => f.type === "library_select");
+  }
+
+  async function openEdit(c: any) {
+    setEditing(c.id); setEditLibs(null); setEditSel([]); setEditBusy(true);
+    try {
+      const res = await api.get(`/connections/${c.id}/libraries`);
+      setEditLibs(res.libraries || []);
+      setEditSel(res.selected || []);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("imports.couldNotLoadLibraries"), "err");
+      setEditing(null);
+    } finally { setEditBusy(false); }
+  }
+
+  function toggleEditLib(id: string) {
+    setEditSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  }
+
+  async function saveEdit(id: string) {
+    setEditBusy(true);
+    try {
+      const res = await api.put(`/connections/${id}`, { config: { library_ids: editSel } });
+      toast(res.pruned ? t("imports.librariesUpdatedPruned", { pruned: res.pruned })
+                       : t("imports.librariesUpdated"));
+      setEditing(null);
+      reload();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+    } finally { setEditBusy(false); }
+  }
 
   const selected = apiProviders.find((p) => p.key === provider);
   const fields = selected?.config_fields || [];
@@ -232,22 +270,58 @@ function Connections({ providers, connections, reload }: {
       ) : (
         <div>
           {connections.map((c) => (
-            <div key={c.id} className="list-row">
-              <div className="col" style={{ flex: 1, gap: 2 }}>
-                <strong>{c.name}</strong>
-                <span className="caption">
-                  {c.provider_name}
-                  {c.last_sync_at ? ` · ${t("imports.lastSync", { date: fmtDate(c.last_sync_at) })}` : ` · ${t("imports.neverSynced")}`}
-                  {c.last_status ? ` · ${c.last_status}` : ""}
-                </span>
+            <div key={c.id} className="col" style={{ gap: 0 }}>
+              <div className="list-row">
+                <div className="col" style={{ flex: 1, gap: 2 }}>
+                  <strong>{c.name}</strong>
+                  <span className="caption">
+                    {c.provider_name}
+                    {c.last_sync_at ? ` · ${t("imports.lastSync", { date: fmtDate(c.last_sync_at) })}` : ` · ${t("imports.neverSynced")}`}
+                    {c.last_status ? ` · ${c.last_status}` : ""}
+                  </span>
+                </div>
+                {can("ingest.write") && (
+                  <>
+                    {providerSupportsLibraries(c.provider_key) && (
+                      <button className="btn-ghost btn-sm" disabled={editBusy && editing === c.id}
+                        onClick={() => (editing === c.id ? setEditing(null) : openEdit(c))}>
+                        {t("imports.editLibraries")}
+                      </button>
+                    )}
+                    <button className="btn-ghost btn-sm" disabled={busy === c.id} onClick={() => sync(c.id)}>
+                      {busy === c.id ? "…" : <><IconRefresh width={15} height={15} /> {t("imports.sync")}</>}
+                    </button>
+                    <button className="btn-danger btn-sm" onClick={() => remove(c.id)}>{t("common.remove")}</button>
+                  </>
+                )}
               </div>
-              {can("ingest.write") && (
-                <>
-                  <button className="btn-ghost btn-sm" disabled={busy === c.id} onClick={() => sync(c.id)}>
-                    {busy === c.id ? "…" : <><IconRefresh width={15} height={15} /> {t("imports.sync")}</>}
-                  </button>
-                  <button className="btn-danger btn-sm" onClick={() => remove(c.id)}>{t("common.remove")}</button>
-                </>
+              {editing === c.id && (
+                <div className="card" style={{ margin: "0 0 12px", background: "var(--bg)" }}>
+                  <label>{t("imports.editLibrariesTitle")}</label>
+                  <p className="caption" style={{ marginBottom: 10 }}>{t("imports.editLibrariesHelp")}</p>
+                  {editBusy && !editLibs ? (
+                    <span className="caption">{t("imports.loadingShort")}</span>
+                  ) : editLibs && editLibs.length > 0 ? (
+                    <div className="col" style={{ gap: 6, marginBottom: 12 }}>
+                      {editLibs.map((lib) => (
+                        <label key={lib.id} className="row" style={{ gap: 8, cursor: "pointer", fontWeight: 400 }}>
+                          <input type="checkbox" checked={editSel.includes(lib.id)}
+                            onChange={() => toggleEditLib(lib.id)} style={{ width: "auto" }} />
+                          <span>{lib.name}{lib.type ? <span className="caption"> · {lib.type}</span> : null}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="caption" style={{ marginBottom: 12 }}>{t("imports.noLibrariesFound")}</p>
+                  )}
+                  <div className="row" style={{ gap: 8 }}>
+                    <button className="btn-primary btn-sm" disabled={editBusy} onClick={() => saveEdit(c.id)}>
+                      {editBusy ? t("common.saving") : t("imports.saveLibraries")}
+                    </button>
+                    <button className="btn-ghost btn-sm" onClick={() => setEditing(null)}>{t("common.cancel")}</button>
+                    <span className="caption">{t("imports.librariesSelected", { selected: editSel.length, total: editLibs?.length || 0 })}</span>
+                  </div>
+                </div>
               )}
             </div>
           ))}

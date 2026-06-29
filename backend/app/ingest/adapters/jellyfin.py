@@ -63,6 +63,10 @@ class JellyfinAdapter(SourceAdapter):
             lib = [lib]
         return [str(s) for s in lib if str(s).strip()]
 
+    def library_prune_spec(self, config: dict):
+        ids = self._library_ids(config)
+        return ("library_id", set(ids)) if ids else None
+
     def list_libraries(self, config: dict) -> list[dict]:
         base = (config.get("base_url") or "").rstrip("/")
         api_key = config.get("api_key")
@@ -119,6 +123,7 @@ class JellyfinAdapter(SourceAdapter):
                     if iid in seen:
                         continue
                     seen.add(iid)
+                    it["_wv_library"] = pid
                     items.append(it)
         else:
             items = self._fetch_items(base, api_key, user_id, None)
@@ -133,6 +138,7 @@ class JellyfinAdapter(SourceAdapter):
             max_played = max(max_played, played_at)
             ticks = item.get("RunTimeTicks")
             duration_s = int(ticks / 10_000_000) if ticks else None
+            lib = item.get("_wv_library")
             if item.get("Type") == "Episode":
                 events.append(NormalizedEvent(
                     raw_title=item.get("SeriesName", item.get("Name", "")),
@@ -144,7 +150,7 @@ class JellyfinAdapter(SourceAdapter):
                     duration_seconds=duration_s, completed=bool(ud.get("Played")),
                     metadata={"overview": item.get("Overview"),
                               "genres": item.get("Genres") or []},
-                    raw={"source": "jellyfin", "id": item.get("Id")},
+                    raw={"source": "jellyfin", "id": item.get("Id"), "library_id": lib},
                 ))
             else:
                 events.append(NormalizedEvent(
@@ -154,6 +160,6 @@ class JellyfinAdapter(SourceAdapter):
                     year=item.get("ProductionYear"),
                     duration_seconds=duration_s, completed=bool(ud.get("Played")),
                     metadata=_movie_metadata(item),
-                    raw={"source": "jellyfin", "id": item.get("Id")},
+                    raw={"source": "jellyfin", "id": item.get("Id"), "library_id": lib},
                 ))
         return events, {"since": max_played.isoformat()}
