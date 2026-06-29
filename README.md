@@ -91,12 +91,15 @@ sample-data/    example Netflix CSV + generic CSV/JSON exports
 
 ## Quick start (Docker)
 
+Deploy on your server (Unraid, etc.) with just `docker-compose.yml` + `.env` — the
+prebuilt image is pulled from GHCR, no source checkout needed:
+
 ```bash
 cp .env.example .env
 # edit .env — at minimum set SESSION_SECRET and POSTGRES_PASSWORD,
 # and RP_ID / RP_ORIGINS to your hostname (see "Passkeys & hostnames" below)
 
-docker compose up -d --build
+docker compose up -d
 ```
 
 Open **http://localhost:7210**. The **first** person to register creates the household
@@ -105,13 +108,24 @@ and becomes the admin. Save the recovery codes shown on sign-up.
 Optionally set `TMDB_API_KEY` in `.env` (or later in **Settings → Plugins**) to enrich
 titles with posters, genres and cast.
 
+### Build from source instead
+
+If you have the repo checked out and want to build the image locally:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
 ### Ports
 
 | Port | Purpose |
 |---|---|
-| `7210` | Public PWA / web (nginx) |
-| `7211` | MCP server (streamable HTTP) |
+| `7210` | Public entry point (nginx) — PWA, `/api` **and** `/mcp` |
 | `7200` | Internal API (Gunicorn) — not exposed publicly |
+| `7211` | Internal MCP server — proxied at `/mcp`, not exposed publicly |
+
+Only **one** port is published. The MCP server is reachable on the main URL at
+`http://<host>:7210/mcp`.
 
 ### Passkeys & hostnames
 
@@ -157,7 +171,8 @@ No core logic, normalization, dedup, aggregation or UI code needs to change.
 
 ## MCP server
 
-The MCP bridge (`:7211`, also proxied at `/mcp`) exposes `search` and `stats` tools so an
+The MCP bridge is served on the main URL at **`/mcp`** (internally the MCP process
+listens on `:7211`, reverse-proxied by nginx). It exposes `search` and `stats` tools so an
 AI assistant can answer questions about your watch history. Create a personal token under
 **Settings → API tokens** and authenticate with `Authorization: Bearer wvapi_…`. Tokens are
 stored salted-hashed and are gated by the `mcp.use` / `mcp.tool.<name>` permissions.
