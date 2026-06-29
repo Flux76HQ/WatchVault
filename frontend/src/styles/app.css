@@ -117,7 +117,7 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: calc(var(--space-3) + env(safe-area-inset-top)) calc(var(--space-4) + env(safe-area-inset-right)) var(--space-3) calc(var(--space-4) + env(safe-area-inset-left));
   margin: 0;
   border-radius: 0;
   border-left: none;
@@ -140,34 +140,47 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 .nav-links a.active { color: var(--accent); background: var(--accent-subtle); }
 .nav-links a:hover { color: var(--text); }
 
-/* Bottom tab bar (mobile) */
+/* Bottom tab bar (mobile) — floating iOS-style pill */
 .tabbar {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: calc(12px + env(safe-area-inset-left));
+  right: calc(12px + env(safe-area-inset-right));
   z-index: 50;
   display: none;
   justify-content: space-around;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-  border-radius: 0;
-  border-bottom: none; border-left: none; border-right: none;
+  gap: 2px;
+  padding: 6px;
+  border-radius: var(--radius-pill);
 }
 .tabbar a {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   color: var(--text-secondary);
-  font-size: 0.66rem;
-  padding: 4px 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 7px 2px;
+  border-radius: 16px;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.tabbar a.active { color: var(--accent); }
-.tabbar a svg { width: 24px; height: 24px; }
+.tabbar a span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tabbar a.active { color: var(--accent); background: var(--accent-subtle); }
+.tabbar a svg { width: 23px; height: 23px; }
 
 @media (max-width: 760px) {
   .nav-links { display: none; }
   .tabbar { display: flex; }
-  .app-main { padding-bottom: 96px; }
+  .app-main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 }
 
 /* Grids */
