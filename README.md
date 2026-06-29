@@ -156,12 +156,16 @@ Passkeys require a secure context — use `localhost` for local testing or HTTPS
 
 **Plex / Jellyfin** — **Imports → API sync connections → Add**, enter the server URL and an
 API token (`X-Plex-Token` / Jellyfin API key). Optionally click **Load libraries** and tick
-which libraries to include (leave empty to sync all), then **Sync** on demand.
+which libraries to include (leave empty to sync all), then **Sync** on demand. You can change
+the selection later with **Edit libraries** on the connection — items from libraries you
+deselect are removed from the watch list, and re-selecting one re-imports it on the next sync.
+For Plex you can also restrict history to a single account by **username or numeric ID**.
 
 **Trakt** — create an app at [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications)
 and copy its **Client ID**. In **Imports → API sync connections → Add**, pick *Trakt*, enter the
-Client ID and your username (a public profile needs nothing more; a private one also needs an
-OAuth access token, with username `me`). Then **Sync** on demand.
+Client ID and your username. Trakt profiles are **private by default**, so adding an OAuth
+access token is recommended (with username `me`); your own history — including private — is then
+read via `/sync/history`. A public profile works with just the Client ID. Then **Sync** on demand.
 
 **Other services** — export your data (manual CSV or a GDPR/data request) and import it via
 the *Generic CSV/JSON* provider. The generic adapter auto-detects common column names

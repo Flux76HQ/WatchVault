@@ -64,7 +64,7 @@ def _handle(job) -> dict:
 
 
 def _run_sync(connection_id: str) -> dict:
-    from app.ingest import ingest_events
+    from app.ingest import ingest_events, prune_connection_libraries
     from app.ingest.adapters import get_adapter
     from app.db import query_one, execute
     conn = query_one(
@@ -81,6 +81,9 @@ def _run_sync(connection_id: str) -> dict:
     events, cursor = adapter.fetch_history(conn["config"], conn["cursor"] or {})
     summary = ingest_events(str(owner["id"]), str(conn["provider_id"]), connection_id, events) \
         if events else {"inserted": 0}
+    spec = adapter.library_prune_spec(conn["config"])
+    if spec:
+        summary["pruned"] = prune_connection_libraries(connection_id, spec[0], spec[1])
     execute("UPDATE source_connections SET cursor=%s, last_status=%s, last_sync_at=now() WHERE id=%s",
             (json.dumps(cursor), f"ok: +{summary.get('inserted', 0)}", connection_id))
     return summary

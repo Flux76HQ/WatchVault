@@ -24,8 +24,9 @@ class PlexAdapter(SourceAdapter):
          "placeholder": "http://192.168.1.10:32400"},
         {"key": "token", "label": "Plex token", "type": "password", "required": True,
          "placeholder": "X-Plex-Token", "help": "Settings → Account → API token (X-Plex-Token)."},
-        {"key": "account_id", "label": "Account ID", "type": "text", "required": False,
-         "placeholder": "Restrict to one Plex account (optional)"},
+        {"key": "account_id", "label": "Account", "type": "text", "required": False,
+         "placeholder": "Restrict to one Plex account (name or numeric ID, optional)",
+         "help": "Limit history to a single Plex account. Enter the account's username or its numeric ID; leave empty for all accounts."},
         {"key": "library_ids", "label": "Libraries", "type": "library_select", "required": False,
          "help": "Only sync watch history from these libraries. Leave empty for all."},
     ]
@@ -37,6 +38,33 @@ class PlexAdapter(SourceAdapter):
         if isinstance(sid, str):
             sid = [sid]
         return {str(s) for s in sid if str(s).strip()}
+
+    def library_prune_spec(self, config: dict):
+        sections = self._section_id(config)
+        return ("librarySectionID", sections) if sections else None
+
+    def _resolve_account_id(self, base: str, token: str, account_id):
+        """Plex's history ``accountID`` filter must be numeric. Users often enter a
+        username instead, which makes the server answer 400. When a non-numeric value
+        is supplied, resolve it to the numeric id via the server's /accounts list."""
+        if not account_id:
+            return None
+        account_id = str(account_id).strip()
+        if not account_id or account_id.isdigit():
+            return account_id or None
+        resp = requests.get(f"{base}/accounts", params={"X-Plex-Token": token},
+                            timeout=20, headers={"Accept": "application/xml"})
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+        names = []
+        for acc in root.findall("Account"):
+            name = acc.get("name", "")
+            names.append(name)
+            if name.lower() == account_id.lower():
+                return acc.get("id")
+        raise ValueError(
+            f"Plex account '{account_id}' not found. Use a numeric account ID or one of: "
+            f"{', '.join(n for n in names if n) or '(none)'}")
 
     def list_libraries(self, config: dict) -> list[dict]:
         base = (config.get("base_url") or "").rstrip("/")
@@ -67,7 +95,7 @@ class PlexAdapter(SourceAdapter):
             "sort": "viewedAt:asc",
             "viewedAt>": since,
         }
-        account_id = config.get("account_id")
+        account_id = self._resolve_account_id(base, token, config.get("account_id"))
         if account_id:
             params["accountID"] = account_id
 
@@ -81,7 +109,8 @@ class PlexAdapter(SourceAdapter):
         events: list[NormalizedEvent] = []
         max_viewed = since
         for video in root.findall("Video"):
-            if sections and video.get("librarySectionID") not in sections:
+            section = video.get("librarySectionID")
+            if sections and section not in sections:
                 continue
             viewed_at = int(video.get("viewedAt", "0"))
             if viewed_at <= since:
@@ -102,7 +131,8 @@ class PlexAdapter(SourceAdapter):
                     episode_name=video.get("title"),
                     duration_seconds=duration_s, completed=True,
                     metadata=self._title_metadata(base, token, meta_key, meta_cache, "series"),
-                    raw={"source": "plex", "ratingKey": video.get("ratingKey")},
+                    raw={"source": "plex", "ratingKey": video.get("ratingKey"),
+                         "librarySectionID": section},
                 ))
             else:
                 events.append(NormalizedEvent(
@@ -112,7 +142,8 @@ class PlexAdapter(SourceAdapter):
                     year=_int(video.get("year")),
                     duration_seconds=duration_s, completed=True,
                     metadata=self._title_metadata(base, token, video.get("ratingKey"), meta_cache, "movie"),
-                    raw={"source": "plex", "ratingKey": video.get("ratingKey")},
+                    raw={"source": "plex", "ratingKey": video.get("ratingKey"),
+                         "librarySectionID": section},
                 ))
         return events, {"since": max_viewed}
 

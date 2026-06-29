@@ -151,6 +151,28 @@ def ingest_events(user_id: str, provider_id: str, source_connection_id: str | No
     }
 
 
+def prune_connection_libraries(source_connection_id: str | None, raw_key: str,
+                               selected: set[str] | list[str]) -> int:
+    """Remove a connection's watch events that came from libraries no longer in the
+    selected subset. Each adapter tags an event's source library under ``raw[raw_key]``;
+    events whose tag is not in ``selected`` are hard-deleted so they can be re-synced if
+    the library is re-selected. Rebuilds the daily aggregate when anything is removed.
+    Returns the number of pruned events. A no-op when no subset is selected."""
+    selected = [str(s) for s in (selected or [])]
+    if not source_connection_id or not selected:
+        return 0
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM watch_events WHERE source_connection_id = %s "
+            "AND raw->>%s IS NOT NULL AND NOT (raw->>%s = ANY(%s)) RETURNING id",
+            (source_connection_id, raw_key, raw_key, selected),
+        )
+        removed = len(cur.fetchall())
+        if removed:
+            cur.execute("SELECT wv_rebuild_daily_agg()")
+    return removed
+
+
 def _bump_agg(cur, user_id, provider_id, watched_date, item_kind, seconds: int) -> None:
     movies = 1 if item_kind == "movie" else 0
     episodes = 1 if item_kind == "episode" else 0
