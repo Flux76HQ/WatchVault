@@ -78,10 +78,16 @@ def _run_sync(connection_id: str) -> dict:
         "SELECT id FROM users WHERE household_id = %s AND deleted_at IS NULL "
         "ORDER BY created_at LIMIT 1", (conn["household_id"],))
     adapter = get_adapter(conn["adapter"])
-    events, cursor = adapter.fetch_history(conn["config"], conn["cursor"] or {})
+    config = conn["config"] or {}
+    new_config, changed = adapter.prepare_config(config)
+    if changed:
+        execute("UPDATE source_connections SET config=%s WHERE id=%s",
+                (json.dumps(new_config), connection_id))
+        config = new_config
+    events, cursor = adapter.fetch_history(config, conn["cursor"] or {})
     summary = ingest_events(str(owner["id"]), str(conn["provider_id"]), connection_id, events) \
         if events else {"inserted": 0}
-    spec = adapter.library_prune_spec(conn["config"])
+    spec = adapter.library_prune_spec(config)
     if spec:
         summary["pruned"] = prune_connection_libraries(connection_id, spec[0], spec[1])
     execute("UPDATE source_connections SET cursor=%s, last_status=%s, last_sync_at=now() WHERE id=%s",

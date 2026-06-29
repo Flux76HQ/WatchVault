@@ -93,6 +93,7 @@ function Connections({ providers, connections, reload }: {
   const [editLibs, setEditLibs] = useState<{ id: string; name: string; type?: string }[] | null>(null);
   const [editSel, setEditSel] = useState<string[]>([]);
   const [editBusy, setEditBusy] = useState(false);
+  const [traktPin, setTraktPin] = useState("");
 
   function providerSupportsLibraries(key: string) {
     return (apiProviders.find((p) => p.key === key)?.config_fields || [])
@@ -144,8 +145,28 @@ function Connections({ providers, connections, reload }: {
     });
   }
 
-  async function loadLibraries() {
-    setLibBusy(true);
+  async function authorizeTrakt() {
+    if (!config.client_id || !config.client_secret) {
+      toast(t("imports.traktNeedKeys"), "err"); return;
+    }
+    if (!traktPin.trim()) { toast(t("imports.traktNeedPin"), "err"); return; }
+    setBusy("trakt");
+    try {
+      const res = await api.post("/connections/trakt/authorize", {
+        client_id: config.client_id, client_secret: config.client_secret, pin: traktPin.trim(),
+      });
+      setConfig((c) => ({
+        ...c, access_token: res.access_token, refresh_token: res.refresh_token,
+        token_expires_at: res.token_expires_at, username: c.username || "me",
+      }));
+      setTraktPin("");
+      toast(t("imports.traktAuthorized"));
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+    } finally { setBusy(null); }
+  }
+
+  async function loadLibraries() {    setLibBusy(true);
     try {
       const res = await api.post("/connections/libraries", { provider, config });
       setLibs(res.libraries || []);
@@ -190,6 +211,18 @@ function Connections({ providers, connections, reload }: {
     reload();
   }
 
+  async function clearItems(id: string) {
+    if (!confirm(t("imports.clearItemsConfirm"))) return;
+    setBusy(id);
+    try {
+      const res = await api.post(`/connections/${id}/clear`);
+      toast(t("imports.itemsCleared", { removed: res.removed }));
+      reload();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+    } finally { setBusy(null); }
+  }
+
   return (
     <div className="card">
       <div className="row" style={{ marginBottom: 14 }}>
@@ -221,8 +254,36 @@ function Connections({ providers, connections, reload }: {
             </div>
           </div>
           {fields.map((f) => (
-            f.type === "library_select" ? (
+            f.type === "trakt_oauth" ? (
               <div key={f.key} style={{ marginBottom: 12 }}>
+                <label>{t("imports.optionalSuffix", { label: f.label })}</label>
+                {config.access_token ? (
+                  <div className="caption" style={{ color: "var(--ok, #3ba776)", marginBottom: 6 }}>
+                    ✓ {t("imports.traktAuthorized")}
+                  </div>
+                ) : (
+                  <div className="col" style={{ gap: 8 }}>
+                    <div className="caption">{t("imports.traktStep1")}{" "}
+                      <a href={config.client_id
+                        ? `https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(config.client_id)}&redirect_uri=urn:ietf:wg:oauth:2.0:oob`
+                        : undefined}
+                        target="_blank" rel="noreferrer"
+                        onClick={(e) => { if (!config.client_id) { e.preventDefault(); toast(t("imports.traktNeedKeys"), "err"); } }}>
+                        {t("imports.traktOpenAuth")}
+                      </a>
+                    </div>
+                    <div className="row" style={{ gap: 8 }}>
+                      <input value={traktPin} onChange={(e) => setTraktPin(e.target.value)}
+                        placeholder={t("imports.traktPinPlaceholder")} style={{ flex: 1 }} />
+                      <button className="btn-ghost btn-sm" disabled={busy === "trakt"} onClick={authorizeTrakt}>
+                        {busy === "trakt" ? t("imports.loadingShort") : t("imports.traktAuthorize")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {f.help && <span className="caption" style={{ display: "block", marginTop: 4 }}>{f.help}</span>}
+              </div>
+            ) : f.type === "library_select" ? (              <div key={f.key} style={{ marginBottom: 12 }}>
                 <label>{t("imports.optionalSuffix", { label: f.label })}</label>
                 <div className="row" style={{ gap: 8, marginBottom: libs ? 8 : 0 }}>
                   <button className="btn-ghost btn-sm" disabled={libBusy} onClick={loadLibraries}>
@@ -290,6 +351,9 @@ function Connections({ providers, connections, reload }: {
                     )}
                     <button className="btn-ghost btn-sm" disabled={busy === c.id} onClick={() => sync(c.id)}>
                       {busy === c.id ? "…" : <><IconRefresh width={15} height={15} /> {t("imports.sync")}</>}
+                    </button>
+                    <button className="btn-ghost btn-sm" disabled={busy === c.id} onClick={() => clearItems(c.id)}>
+                      {t("imports.clearItems")}
                     </button>
                     <button className="btn-danger btn-sm" onClick={() => remove(c.id)}>{t("common.remove")}</button>
                   </>

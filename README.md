@@ -160,12 +160,17 @@ which libraries to include (leave empty to sync all), then **Sync** on demand. Y
 the selection later with **Edit libraries** on the connection — items from libraries you
 deselect are removed from the watch list, and re-selecting one re-imports it on the next sync.
 For Plex you can also restrict history to a single account by **username or numeric ID**.
+Use **Clear items** on any connection to wipe everything it imported without removing the
+connection (the cursor is kept, so only genuinely new watches are pulled afterwards).
 
 **Trakt** — create an app at [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications)
-and copy its **Client ID**. In **Imports → API sync connections → Add**, pick *Trakt*, enter the
-Client ID and your username. Trakt profiles are **private by default**, so adding an OAuth
-access token is recommended (with username `me`); your own history — including private — is then
-read via `/sync/history`. A public profile works with just the Client ID. Then **Sync** on demand.
+and copy its **Client ID** and **Client Secret**. In **Imports → API sync connections → Add**,
+pick *Trakt*, enter the Client ID, Client Secret and your username. Trakt profiles are
+**private by default**, so click **Open Trakt authorization**, approve the app, and paste the
+**PIN** back, then **Authorize** — WatchVault exchanges it for an access + refresh token (set
+username to `me`). Your own history — including private — is then read via `/sync/history`, and
+the access token is refreshed automatically before it expires. A public profile works with just
+the Client ID. Then **Sync** on demand.
 
 **Other services** — export your data (manual CSV or a GDPR/data request) and import it via
 the *Generic CSV/JSON* provider. The generic adapter auto-detects common column names

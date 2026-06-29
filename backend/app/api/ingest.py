@@ -6,7 +6,7 @@ import json
 from flask import Blueprint, jsonify, request
 
 from ..db import execute, query_all, query_one
-from ..ingest import ingest_events, prune_connection_libraries
+from ..ingest import ingest_events, prune_connection_libraries, clear_connection_events
 from ..ingest.adapters import get_adapter
 from ..auth.sessions import current_user, require_perm
 from ._common import household_user_ids
@@ -207,6 +207,22 @@ def update_connection(conn_id: str):
     return jsonify({"ok": True, "pruned": pruned, "resync": libraries_changed})
 
 
+@bp.post("/connections/<conn_id>/clear")
+@require_perm("ingest.write")
+def clear_connection(conn_id: str):
+    """Wipe every watch event this connection imported, without removing the
+    connection itself. The cursor is kept so the cleared history isn't re-pulled."""
+    user = current_user()
+    conn = query_one(
+        "SELECT id FROM source_connections WHERE id = %s AND household_id = %s",
+        (conn_id, user["household_id"]),
+    )
+    if not conn:
+        return jsonify({"error": "not found"}), 404
+    removed = clear_connection_events(conn_id)
+    return jsonify({"ok": True, "removed": removed})
+
+
 @bp.delete("/connections/<conn_id>")
 @require_perm("ingest.write")
 def delete_connection(conn_id: str):
@@ -214,6 +230,27 @@ def delete_connection(conn_id: str):
     execute("DELETE FROM source_connections WHERE id = %s AND household_id = %s",
             (conn_id, user["household_id"]))
     return jsonify({"ok": True})
+
+
+@bp.post("/connections/trakt/authorize")
+@require_perm("ingest.write")
+def trakt_authorize():
+    """Exchange a Trakt PIN (out-of-band auth code) for access + refresh tokens.
+
+    The frontend posts client_id/client_secret/pin during the add-connection flow
+    and stores the returned tokens into the connection config before saving."""
+    from ..ingest.adapters.trakt import exchange_pin
+    body = request.get_json(force=True) or {}
+    client_id = (body.get("client_id") or "").strip()
+    client_secret = (body.get("client_secret") or "").strip()
+    pin = (body.get("pin") or "").strip()
+    if not (client_id and client_secret and pin):
+        return jsonify({"error": "client_id, client_secret and pin are required"}), 400
+    try:
+        tokens = exchange_pin(client_id, client_secret, pin)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"ok": True, **tokens})
 
 
 @bp.post("/connections/<conn_id>/sync")
@@ -232,7 +269,13 @@ def sync_connection(conn_id: str):
     target = _target_user(user)
     try:
         adapter = get_adapter(conn["adapter"])
-        events, new_cursor = adapter.fetch_history(conn["config"], conn["cursor"] or {})
+        config = conn["config"] or {}
+        new_config, changed = adapter.prepare_config(config)
+        if changed:
+            execute("UPDATE source_connections SET config = %s WHERE id = %s",
+                    (json.dumps(new_config), conn_id))
+            config = new_config
+        events, new_cursor = adapter.fetch_history(config, conn["cursor"] or {})
     except Exception as exc:  # noqa: BLE001
         execute("UPDATE source_connections SET last_status = %s, last_sync_at = now() WHERE id = %s",
                 (f"error: {exc}", conn_id))
@@ -240,7 +283,7 @@ def sync_connection(conn_id: str):
 
     summary = ingest_events(target, str(conn["provider_id"]), conn_id, events) if events else \
         {"inserted": 0, "duplicates": 0, "titles_created": 0}
-    spec = adapter.library_prune_spec(conn["config"])
+    spec = adapter.library_prune_spec(config)
     if spec:
         summary["pruned"] = prune_connection_libraries(conn_id, spec[0], spec[1])
     execute(
