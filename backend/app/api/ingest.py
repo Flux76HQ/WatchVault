@@ -6,7 +6,7 @@ import json
 
 from flask import Blueprint, jsonify, request
 
-from ..db import execute, query_all, query_one
+from ..db import connection, execute, query_all, query_one
 from ..ingest import (ingest_events, prune_connection_libraries,
                       clear_connection_events, reset_all_data,
                       ingest_title_from_trakt, enqueue_trakt_title_syncs,
@@ -14,7 +14,9 @@ from ..ingest import (ingest_events, prune_connection_libraries,
                       delete_episode_watch, delete_movie_watch)
 from ..ingest.adapters import get_adapter
 from ..auth.sessions import current_user, require_perm
-from ._common import household_user_ids, scope_user_ids
+from ..catalog import get_or_create_movie_by_tmdb
+from ..plugins import enrich_title, runtime
+from ._common import household_user_ids, poster_url, scope_user_ids
 
 bp = Blueprint("ingest", __name__, url_prefix="/api")
 
@@ -465,6 +467,130 @@ def mark_title_watched(title_id: str):
     if status != "ok":
         return jsonify({"error": "could not mark watched"}), 400
     return jsonify({"ok": True, **result})
+
+
+# ── Manual "add a cinema film": search TMDB, then create + mark watched ─────
+
+def _map_movie_search_result(r: dict) -> dict | None:
+    """Trim a raw TMDB movie search hit to the fields the picker needs. Returns
+    ``None`` when the result has no usable id."""
+    tmdb_id = r.get("id")
+    if not tmdb_id:
+        return None
+    rd = r.get("release_date") or ""
+    return {
+        "tmdb_id": tmdb_id,
+        "title": r.get("title") or r.get("name"),
+        "year": int(rd[:4]) if rd[:4].isdigit() else None,
+        "release_date": rd or None,
+        "poster": poster_url(r.get("poster_path")),
+        "overview": r.get("overview") or None,
+    }
+
+
+@bp.get("/catalog/tmdb-search")
+@require_perm("catalog.read")
+def tmdb_search():
+    """Search TMDB for a movie to add by hand (e.g. a film seen in the cinema).
+
+    Privacy: only the public query string is sent to TMDB — never any personal
+    watch data. Returns an empty list when no metadata provider is configured."""
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"results": []})
+    year = request.args.get("year")
+    try:
+        year_i = int(year) if year else None
+    except ValueError:
+        year_i = None
+
+    results: list[dict] = []
+    for pid in runtime.capability_providers("search"):
+        try:
+            plugin = runtime.get_plugin(pid)
+        except Exception:  # noqa: BLE001
+            continue
+        if not getattr(plugin, "configured", True):
+            continue
+        try:
+            raw = plugin.search(q, year_i, "movie") or []
+        except Exception:  # noqa: BLE001 — a provider error must not break search
+            continue
+        for r in raw:
+            mapped = _map_movie_search_result(r)
+            if mapped:
+                results.append(mapped)
+        if results:
+            break  # first configured provider with hits wins
+    return jsonify({"results": results})
+
+
+@bp.post("/catalog/add-film")
+@require_perm("ingest.write")
+def add_film():
+    """Add a movie picked from TMDB: create/reuse the title, enrich it, mark it
+    watched on a date, and attribute it to a platform (default "Cinema").
+
+    Body: ``{tmdb_id, title?, year?, date?, provider_key?, user_id?}``. The title
+    is bound to the exact ``tmdb_id`` up front so enrichment fetches that record
+    directly; the partial UNIQUE index on ``(kind, tmdb_id)`` reuses an existing
+    row so a later sync of the same film never duplicates it. The watch is a
+    ``manual`` event re-attributed onto the chosen platform via a title-level
+    override."""
+    user = current_user()
+    target = _target_user(user)
+    if not target:
+        return jsonify({"error": "invalid target user"}), 400
+    body = request.get_json(silent=True) or {}
+
+    raw_id = body.get("tmdb_id")
+    try:
+        tmdb_id = int(raw_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "tmdb_id required"}), 400
+    try:
+        date = _parse_watch_date(body)
+    except ValueError:
+        return jsonify({"error": "invalid date"}), 400
+
+    title_text = (body.get("title") or "").strip()
+    year = body.get("year")
+    try:
+        year = int(year) if year else None
+    except (TypeError, ValueError):
+        year = None
+    provider_key = (body.get("provider_key") or "cinema").strip() or "cinema"
+
+    provider = query_one("SELECT id, key FROM providers WHERE key = %s", (provider_key,))
+    if not provider:
+        return jsonify({"error": "unknown provider"}), 400
+
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, enriched_at FROM titles "
+                    "WHERE kind = 'movie' AND tmdb_id = %s", (tmdb_id,))
+        existing = cur.fetchone()
+        title_id = get_or_create_movie_by_tmdb(cur, tmdb_id, title_text, year)
+        needs_enrich = existing is None or existing.get("enriched_at") is None
+
+    if needs_enrich:
+        try:
+            enrich_title(title_id)
+        except Exception:  # noqa: BLE001 — enrichment is best-effort
+            pass
+
+    result = add_manual_movie(target, title_id, date)
+    if result.get("status") not in ("ok",):
+        return jsonify({"error": "could not mark watched"}), 400
+
+    execute("UPDATE titles SET platform_override_provider_id = %s WHERE id = %s",
+            (provider["id"], title_id))
+    from ..networks import reattribute_title_events
+    reattribute_title_events(title_id)
+
+    t = query_one("SELECT title FROM titles WHERE id = %s", (title_id,))
+    return jsonify({"ok": True, "title_id": str(title_id),
+                    "title": t["title"] if t else title_text,
+                    "inserted": result.get("inserted", 0)})
 
 
 @bp.post("/episodes/<episode_id>/watch")
