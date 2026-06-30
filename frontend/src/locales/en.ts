@@ -340,6 +340,12 @@ const en = {
   "title.seasonMarked": "{n} episodes marked",
   "title.watchAdded": "Watch date added",
   "title.watchRemoved": "Watch date removed",
+  "title.deleteTitle": "Delete from database",
+  "title.deleteConfirm": "Permanently delete “{title}” and all its watch history from WatchVault? This cannot be undone.",
+  "title.delete": "Delete",
+  "title.deleting": "Deleting…",
+  "title.deleted": "“{title}” deleted",
+  "title.deleteFailed": "Could not delete this title",
 
   // ── Person ──────────────────────────────────────────────────────────────
   "person.biography": "Biography",

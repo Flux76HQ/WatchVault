@@ -340,6 +340,12 @@ const nl = {
   "title.seasonMarked": "{n} afleveringen gemarkeerd",
   "title.watchAdded": "Kijkdatum toegevoegd",
   "title.watchRemoved": "Kijkdatum verwijderd",
+  "title.deleteTitle": "Verwijderen uit database",
+  "title.deleteConfirm": "“{title}” en de volledige kijkgeschiedenis definitief uit WatchVault verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "title.delete": "Verwijderen",
+  "title.deleting": "Verwijderen…",
+  "title.deleted": "“{title}” verwijderd",
+  "title.deleteFailed": "Kon deze titel niet verwijderen",
 
   // ── Person ──────────────────────────────────────────────────────────────
   "person.biography": "Biografie",

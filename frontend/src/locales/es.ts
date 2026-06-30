@@ -340,6 +340,12 @@ const es = {
   "title.seasonMarked": "{n} episodios marcados",
   "title.watchAdded": "Fecha añadida",
   "title.watchRemoved": "Fecha eliminada",
+  "title.deleteTitle": "Eliminar de la base de datos",
+  "title.deleteConfirm": "¿Eliminar permanentemente «{title}» y todo su historial de visionado de WatchVault? Esta acción no se puede deshacer.",
+  "title.delete": "Eliminar",
+  "title.deleting": "Eliminando…",
+  "title.deleted": "«{title}» eliminado",
+  "title.deleteFailed": "No se pudo eliminar este título",
 
   // ── Person ──────────────────────────────────────────────────────────────
   "person.biography": "Biografía",
