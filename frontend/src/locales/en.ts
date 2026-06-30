@@ -225,6 +225,8 @@ const en = {
   "settings.dark": "Dark",
   "settings.system": "System",
   "settings.accentColor": "Accent color",
+  "settings.defaultProfile": "Default profile",
+  "settings.defaultProfileHint": "The profile shown when you open WatchVault.",
   "settings.expert": "Expert mode",
   "settings.expertHint": "Show advanced, technical sections like the attribution log and re-attribution actions.",
   "common.on": "On",
