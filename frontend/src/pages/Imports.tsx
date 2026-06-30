@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "../lib/app";
 import { useT } from "../lib/i18n";
 import { api, ApiError } from "../lib/api";
@@ -93,9 +93,14 @@ function Connections({ providers, connections, reload }: {
   const [editLibs, setEditLibs] = useState<{ id: string; name: string; type?: string }[] | null>(null);
   const [editSel, setEditSel] = useState<string[]>([]);
   const [editBusy, setEditBusy] = useState(false);
-  const [traktPin, setTraktPin] = useState("");
   const [reauthId, setReauthId] = useState<string | null>(null);
   const [reauthSecret, setReauthSecret] = useState("");
+  // Active Trakt device-flow session (one at a time). target is "add" or a conn id.
+  const [device, setDevice] = useState<{
+    device_code: string; user_code: string; verification_url: string;
+    interval: number; expires_in: number; startedAt: number;
+    target: string; client_id: string; client_secret: string;
+  } | null>(null);
 
   function providerSupportsLibraries(key: string) {
     return (apiProviders.find((p) => p.key === key)?.config_fields || [])
@@ -105,6 +110,74 @@ function Connections({ providers, connections, reload }: {
   function providerSupportsTrakt(key: string) {
     return (apiProviders.find((p) => p.key === key)?.config_fields || [])
       .some((f) => f.type === "trakt_oauth");
+  }
+
+  // Poll the Trakt device flow until the user approves it (or it expires).
+  useEffect(() => {
+    if (!device) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      if (cancelled) return;
+      if (Date.now() - device.startedAt > device.expires_in * 1000) {
+        if (!cancelled) { toast(t("imports.traktDeviceExpired"), "err"); setDevice(null); }
+        return;
+      }
+      try {
+        const res = device.target === "add"
+          ? await api.post("/connections/trakt/device-token", {
+              client_id: device.client_id, client_secret: device.client_secret,
+              device_code: device.device_code,
+            })
+          : await api.post(`/connections/${device.target}/trakt-authorize`, {
+              device_code: device.device_code,
+              ...(device.client_secret ? { client_secret: device.client_secret } : {}),
+            });
+        if (cancelled) return;
+        if (res.status === "authorized") {
+          if (device.target === "add") {
+            setConfig((c) => ({
+              ...c, access_token: res.access_token, refresh_token: res.refresh_token,
+              token_expires_at: res.token_expires_at, username: c.username || "me",
+            }));
+          } else {
+            setReauthId(null); reload();
+          }
+          toast(t("imports.traktAuthorized"));
+          setDevice(null);
+          return;
+        }
+        if (res.status === "expired" || res.status === "denied" || res.status === "error") {
+          toast(t(res.status === "denied" ? "imports.traktDeviceDenied" : "imports.traktDeviceExpired"), "err");
+          setDevice(null);
+          return;
+        }
+        const delay = (device.interval + (res.status === "slow_down" ? 5 : 0)) * 1000;
+        timer = setTimeout(poll, delay);
+      } catch (e) {
+        if (cancelled) return;
+        toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+        setDevice(null);
+      }
+    };
+    timer = setTimeout(poll, device.interval * 1000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [device]);
+
+  async function startTraktDevice(target: string, client_id: string, client_secret: string) {
+    setBusy("trakt");
+    try {
+      const res = await api.post("/connections/trakt/device-code",
+        target === "add" ? { client_id } : { connection_id: target, client_id });
+      setDevice({
+        device_code: res.device_code, user_code: res.user_code,
+        verification_url: res.verification_url || "https://trakt.tv/activate",
+        interval: res.interval || 5, expires_in: res.expires_in || 600,
+        startedAt: Date.now(), target, client_id, client_secret,
+      });
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+    } finally { setBusy(null); }
   }
 
   async function openEdit(c: any) {
@@ -156,21 +229,7 @@ function Connections({ providers, connections, reload }: {
     if (!config.client_id || !config.client_secret) {
       toast(t("imports.traktNeedKeys"), "err"); return;
     }
-    if (!traktPin.trim()) { toast(t("imports.traktNeedPin"), "err"); return; }
-    setBusy("trakt");
-    try {
-      const res = await api.post("/connections/trakt/authorize", {
-        client_id: config.client_id, client_secret: config.client_secret, pin: traktPin.trim(),
-      });
-      setConfig((c) => ({
-        ...c, access_token: res.access_token, refresh_token: res.refresh_token,
-        token_expires_at: res.token_expires_at, username: c.username || "me",
-      }));
-      setTraktPin("");
-      toast(t("imports.traktAuthorized"));
-    } catch (e) {
-      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
-    } finally { setBusy(null); }
+    await startTraktDevice("add", config.client_id, config.client_secret);
   }
 
   async function loadLibraries() {    setLibBusy(true);
@@ -233,19 +292,7 @@ function Connections({ providers, connections, reload }: {
   async function reauthorizeTrakt(c: any) {
     if (!c.client_id) { toast(t("imports.traktNeedKeys"), "err"); return; }
     if (!c.has_secret && !reauthSecret.trim()) { toast(t("imports.traktNeedKeys"), "err"); return; }
-    if (!traktPin.trim()) { toast(t("imports.traktNeedPin"), "err"); return; }
-    setBusy("reauth");
-    try {
-      await api.post(`/connections/${c.id}/trakt-authorize`, {
-        pin: traktPin.trim(),
-        ...(reauthSecret.trim() ? { client_secret: reauthSecret.trim() } : {}),
-      });
-      setTraktPin(""); setReauthSecret(""); setReauthId(null);
-      toast(t("imports.traktAuthorized"));
-      reload();
-    } catch (e) {
-      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
-    } finally { setBusy(null); }
+    await startTraktDevice(c.id, c.client_id, reauthSecret.trim());
   }
 
   return (
@@ -286,22 +333,24 @@ function Connections({ providers, connections, reload }: {
                   <div className="caption" style={{ color: "var(--ok, #3ba776)", marginBottom: 6 }}>
                     ✓ {t("imports.traktAuthorized")}
                   </div>
+                ) : device && device.target === "add" ? (
+                  <div className="col" style={{ gap: 6 }}>
+                    <div className="caption">{t("imports.traktDeviceInstructions")}</div>
+                    <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      <code style={{ fontSize: 22, letterSpacing: 3, fontWeight: 700 }}>{device.user_code}</code>
+                      <a className="btn-ghost btn-sm" href={device.verification_url} target="_blank" rel="noreferrer">
+                        {t("imports.traktDeviceOpen")}
+                      </a>
+                      <button className="btn-ghost btn-sm" onClick={() => setDevice(null)}>{t("common.cancel")}</button>
+                    </div>
+                    <div className="caption">{t("imports.traktDeviceWaiting")}</div>
+                  </div>
                 ) : (
                   <div className="col" style={{ gap: 8 }}>
-                    <div className="caption">{t("imports.traktStep1")}{" "}
-                      <a href={config.client_id
-                        ? `https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(config.client_id)}&redirect_uri=urn:ietf:wg:oauth:2.0:oob`
-                        : undefined}
-                        target="_blank" rel="noreferrer"
-                        onClick={(e) => { if (!config.client_id) { e.preventDefault(); toast(t("imports.traktNeedKeys"), "err"); } }}>
-                        {t("imports.traktOpenAuth")}
-                      </a>
-                    </div>
+                    <div className="caption">{t("imports.traktDeviceHint")}</div>
                     <div className="row" style={{ gap: 8 }}>
-                      <input value={traktPin} onChange={(e) => setTraktPin(e.target.value)}
-                        placeholder={t("imports.traktPinPlaceholder")} style={{ flex: 1 }} />
                       <button className="btn-ghost btn-sm" disabled={busy === "trakt"} onClick={authorizeTrakt}>
-                        {busy === "trakt" ? t("imports.loadingShort") : t("imports.traktAuthorize")}
+                        {busy === "trakt" ? t("imports.loadingShort") : t("imports.traktDeviceStart")}
                       </button>
                     </div>
                   </div>
@@ -376,7 +425,7 @@ function Connections({ providers, connections, reload }: {
                     )}
                     {providerSupportsTrakt(c.provider_key) && (
                       <button className="btn-ghost btn-sm"
-                        onClick={() => { setReauthId(reauthId === c.id ? null : c.id); setTraktPin(""); setReauthSecret(""); }}>
+                        onClick={() => { setReauthId(reauthId === c.id ? null : c.id); setDevice(null); setReauthSecret(""); }}>
                         {t("imports.traktReauthorize")}
                       </button>
                     )}
@@ -423,26 +472,33 @@ function Connections({ providers, connections, reload }: {
                   <label>{t("imports.traktReauthTitle")}</label>
                   <p className="caption" style={{ marginBottom: 10 }}>{t("imports.traktReauthHelp")}</p>
                   <div className="col" style={{ gap: 8 }}>
-                    {!c.has_secret && (
-                      <input value={reauthSecret} onChange={(e) => setReauthSecret(e.target.value)}
-                        type="password" placeholder={t("imports.traktSecretPlaceholder")} />
+                    {device && device.target === c.id ? (
+                      <div className="col" style={{ gap: 6 }}>
+                        <div className="caption">{t("imports.traktDeviceInstructions")}</div>
+                        <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                          <code style={{ fontSize: 22, letterSpacing: 3, fontWeight: 700 }}>{device.user_code}</code>
+                          <a className="btn-ghost btn-sm" href={device.verification_url} target="_blank" rel="noreferrer">
+                            {t("imports.traktDeviceOpen")}
+                          </a>
+                          <button className="btn-ghost btn-sm" onClick={() => setDevice(null)}>{t("common.cancel")}</button>
+                        </div>
+                        <div className="caption">{t("imports.traktDeviceWaiting")}</div>
+                      </div>
+                    ) : (
+                      <>
+                        {!c.has_secret && (
+                          <input value={reauthSecret} onChange={(e) => setReauthSecret(e.target.value)}
+                            type="password" placeholder={t("imports.traktSecretPlaceholder")} />
+                        )}
+                        <div className="caption">{t("imports.traktDeviceHint")}</div>
+                        <div className="row" style={{ gap: 8 }}>
+                          <button className="btn-primary btn-sm" disabled={busy === "trakt"} onClick={() => reauthorizeTrakt(c)}>
+                            {busy === "trakt" ? t("imports.loadingShort") : t("imports.traktDeviceStart")}
+                          </button>
+                          <button className="btn-ghost btn-sm" onClick={() => setReauthId(null)}>{t("common.cancel")}</button>
+                        </div>
+                      </>
                     )}
-                    <div className="caption">{t("imports.traktStep1")}{" "}
-                      <a href={c.client_id
-                        ? `https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(c.client_id)}&redirect_uri=urn:ietf:wg:oauth:2.0:oob`
-                        : undefined}
-                        target="_blank" rel="noreferrer">
-                        {t("imports.traktOpenAuth")}
-                      </a>
-                    </div>
-                    <div className="row" style={{ gap: 8 }}>
-                      <input value={traktPin} onChange={(e) => setTraktPin(e.target.value)}
-                        placeholder={t("imports.traktPinPlaceholder")} style={{ flex: 1 }} />
-                      <button className="btn-primary btn-sm" disabled={busy === "reauth"} onClick={() => reauthorizeTrakt(c)}>
-                        {busy === "reauth" ? t("imports.loadingShort") : t("imports.traktAuthorize")}
-                      </button>
-                      <button className="btn-ghost btn-sm" onClick={() => setReauthId(null)}>{t("common.cancel")}</button>
-                    </div>
                   </div>
                 </div>
               )}

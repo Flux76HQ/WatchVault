@@ -10,10 +10,11 @@ A private profile additionally needs an OAuth ``Authorization: Bearer {access_to
 with a token we read ``/sync/history`` (your own history, including private).
 
 Obtaining a token without leaving the app: the user creates a Trakt application
-(Client ID + Client Secret), opens the PIN authorize URL, and pastes the PIN back.
-WatchVault exchanges it (``exchange_pin``) for an access + refresh token using the
-Client Secret. Tokens are refreshed automatically before they expire
-(``refresh_tokens`` / ``prepare_config``).
+(Client ID + Client Secret) and authorizes via the device flow — WatchVault shows
+a short code that the user enters at trakt.tv/activate. We poll Trakt
+(``request_device_code`` / ``poll_device_token``) until approved and store the
+returned access + refresh token. Tokens are refreshed automatically before they
+expire (``refresh_tokens`` / ``prepare_config``).
 
 Config: {"client_id", "client_secret", "access_token", "refresh_token",
          "token_expires_at" (epoch), "username"}
@@ -32,8 +33,21 @@ API_BASE = "https://api.trakt.tv"
 PAGE_LIMIT = 100
 MAX_PAGES = 25          # cap one sync at 2500 events; cursor makes the next sync incremental
 
-# PIN / out-of-band redirect for the device-less authorization-code flow.
-OOB_REDIRECT = "urn:ietf:wg:oauth:2.0:oob"
+# Device OAuth flow: the user enters a short code at trakt.tv/activate.
+# (Trakt removed support for the urn:ietf:wg:oauth:2.0:oob "PIN" redirect, which
+#  now fails with "redirect uri is malformed or doesn't match client redirect URI".)
+DEVICE_CODE_URL = f"{API_BASE}/oauth/device/code"
+DEVICE_TOKEN_URL = f"{API_BASE}/oauth/device/token"
+# Map a Trakt device-token poll HTTP status to a flow state.
+_DEVICE_POLL_STATUS = {
+    200: "authorized",
+    400: "pending",     # waiting for the user to approve in Trakt
+    404: "error",       # invalid device code
+    409: "error",       # already used
+    410: "expired",     # the code expired — start again
+    418: "denied",      # the user denied the request
+    429: "slow_down",   # polling too fast — back off
+}
 # Refresh a token this many seconds before it actually expires.
 REFRESH_SKEW = 86_400
 
@@ -49,25 +63,46 @@ def _token_payload(data: dict) -> dict:
     }
 
 
-def exchange_pin(client_id: str, client_secret: str, pin: str) -> dict:
-    """Exchange a Trakt authorization PIN for access + refresh tokens."""
+def request_device_code(client_id: str) -> dict:
+    """Start the Trakt device flow.
+
+    Returns a short ``user_code`` the user types at ``verification_url`` plus the
+    ``device_code`` we poll with (see ``poll_device_token``)."""
     resp = requests.post(
-        f"{API_BASE}/oauth/token",
-        json={
-            "code": pin.strip(),
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "redirect_uri": OOB_REDIRECT,
-            "grant_type": "authorization_code",
-        },
+        DEVICE_CODE_URL,
+        json={"client_id": client_id},
         headers={"Content-Type": "application/json"},
         timeout=30,
     )
     if resp.status_code != 200:
         raise ValueError(
-            "Trakt rejected the authorization. Check the Client ID/Secret and that the "
-            "PIN is fresh, then try again.")
-    return _token_payload(resp.json())
+            "Trakt could not start authorization. Check the Client ID and try again.")
+    d = resp.json()
+    return {
+        "device_code": d.get("device_code"),
+        "user_code": d.get("user_code"),
+        "verification_url": d.get("verification_url") or "https://trakt.tv/activate",
+        "expires_in": int(d.get("expires_in") or 600),
+        "interval": int(d.get("interval") or 5),
+    }
+
+
+def poll_device_token(client_id: str, client_secret: str, device_code: str) -> dict:
+    """Poll once for the device-flow result.
+
+    Returns ``{"status": ...}`` where status is one of authorized / pending /
+    slow_down / expired / denied / error. On ``authorized`` the access + refresh
+    tokens are merged into the returned dict."""
+    resp = requests.post(
+        DEVICE_TOKEN_URL,
+        json={"code": device_code, "client_id": client_id, "client_secret": client_secret},
+        headers={"Content-Type": "application/json"},
+        timeout=30,
+    )
+    status = _DEVICE_POLL_STATUS.get(resp.status_code, "error")
+    if status == "authorized":
+        return {"status": status, **_token_payload(resp.json())}
+    return {"status": status}
 
 
 def refresh_tokens(client_id: str, client_secret: str, refresh_token: str) -> dict:
@@ -78,7 +113,6 @@ def refresh_tokens(client_id: str, client_secret: str, refresh_token: str) -> di
             "refresh_token": refresh_token,
             "client_id": client_id,
             "client_secret": client_secret,
-            "redirect_uri": OOB_REDIRECT,
             "grant_type": "refresh_token",
         },
         headers={"Content-Type": "application/json"},
@@ -87,12 +121,6 @@ def refresh_tokens(client_id: str, client_secret: str, refresh_token: str) -> di
     if resp.status_code != 200:
         raise ValueError("Trakt token refresh failed — re-authorize the connection.")
     return _token_payload(resp.json())
-
-
-def authorize_url(client_id: str) -> str:
-    """The URL the user opens to get a PIN for the out-of-band flow."""
-    return (f"{API_BASE.replace('api.', '')}/oauth/authorize"
-            f"?response_type=code&client_id={client_id}&redirect_uri={OOB_REDIRECT}")
 
 
 def _parse_iso(value: str | None) -> dt.datetime | None:
@@ -126,16 +154,16 @@ class TraktAdapter(SourceAdapter):
          "help": "Create an app at trakt.tv/oauth/applications and copy its Client ID."},
         {"key": "client_secret", "label": "API client secret", "type": "password", "required": False,
          "placeholder": "Trakt application Client Secret",
-         "help": "Needed to authorize with a PIN and to auto-refresh the access token. "
+         "help": "Needed to authorize and to auto-refresh the access token. "
                  "Copy it from the same Trakt application page."},
         {"key": "username", "label": "Username", "type": "text", "required": True,
          "placeholder": "me", "help": "Your Trakt username, or 'me' when using an access token."},
-        # Special field: renders the PIN authorize flow in the UI and stores the
+        # Special field: renders the device authorize flow in the UI and stores the
         # resulting access_token/refresh_token/token_expires_at into the config.
         {"key": "access_token", "label": "Authorization", "type": "trakt_oauth", "required": False,
-         "help": "Recommended: Trakt profiles are private by default. Authorize with a PIN so your "
-                 "own history (including private) syncs via /sync/history. Without it, only a public "
-                 "profile works."},
+         "help": "Recommended: Trakt profiles are private by default. Authorize with a device "
+                 "code so your own history (including private) syncs via /sync/history. Without "
+                 "it, only a public profile works."},
     ]
 
     def prepare_config(self, config: dict) -> tuple[dict, bool]:

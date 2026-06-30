@@ -241,36 +241,67 @@ def delete_connection(conn_id: str):
     return jsonify({"ok": True})
 
 
-@bp.post("/connections/trakt/authorize")
+@bp.post("/connections/trakt/device-code")
 @require_perm("ingest.write")
-def trakt_authorize():
-    """Exchange a Trakt PIN (out-of-band auth code) for access + refresh tokens.
+def trakt_device_code():
+    """Start the Trakt device flow and return the short user code + device code.
 
-    The frontend posts client_id/client_secret/pin during the add-connection flow
-    and stores the returned tokens into the connection config before saving."""
-    from ..ingest.adapters.trakt import exchange_pin
-    body = request.get_json(force=True) or {}
+    Used by both the add-connection form (client_id in the body) and the
+    re-authorize panel of an existing connection (connection_id in the body, so
+    the stored client_id is reused)."""
+    from ..ingest.adapters.trakt import request_device_code
+    body = request.get_json(force=True, silent=True) or {}
     client_id = (body.get("client_id") or "").strip()
-    client_secret = (body.get("client_secret") or "").strip()
-    pin = (body.get("pin") or "").strip()
-    if not (client_id and client_secret and pin):
-        return jsonify({"error": "client_id, client_secret and pin are required"}), 400
+    conn_id = (body.get("connection_id") or "").strip()
+    if not client_id and conn_id:
+        user = current_user()
+        conn = query_one(
+            "SELECT config FROM source_connections WHERE id = %s AND household_id = %s",
+            (conn_id, user["household_id"]),
+        )
+        if conn:
+            client_id = ((conn["config"] or {}).get("client_id") or "").strip()
+    if not client_id:
+        return jsonify({"error": "client_id is required"}), 400
     try:
-        tokens = exchange_pin(client_id, client_secret, pin)
+        data = request_device_code(client_id)
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": str(exc)}), 400
-    return jsonify({"ok": True, **tokens})
+    return jsonify({"ok": True, **data})
+
+
+@bp.post("/connections/trakt/device-token")
+@require_perm("ingest.write")
+def trakt_device_token():
+    """Poll the Trakt device flow during the add-connection form.
+
+    Returns the current status; on ``authorized`` the access/refresh tokens are
+    returned so the frontend can store them into the new connection config."""
+    from ..ingest.adapters.trakt import poll_device_token
+    body = request.get_json(force=True, silent=True) or {}
+    client_id = (body.get("client_id") or "").strip()
+    client_secret = (body.get("client_secret") or "").strip()
+    device_code = (body.get("device_code") or "").strip()
+    if not (client_id and client_secret and device_code):
+        return jsonify({"error": "client_id, client_secret and device_code are required"}), 400
+    try:
+        result = poll_device_token(client_id, client_secret, device_code)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"ok": True, **result})
 
 
 @bp.post("/connections/<conn_id>/trakt-authorize")
 @require_perm("ingest.write")
 def trakt_authorize_existing(conn_id: str):
-    """(Re)authorize an existing Trakt connection: exchange a fresh PIN and store
-    the new access/refresh tokens on the connection. The stored client_id/secret
-    are reused when present (so the user only pastes a new PIN); either may be
-    supplied in the body to fill one that was never saved. This is what fixes a
-    connection stuck on 401/403 because it has no (or an expired) OAuth token."""
-    from ..ingest.adapters.trakt import exchange_pin
+    """(Re)authorize an existing Trakt connection via the device flow.
+
+    The frontend polls this with the device_code obtained from
+    /connections/trakt/device-code. The stored client_id/secret are reused (the
+    secret may be supplied in the body to fill one that was never saved). On the
+    ``authorized`` status the new tokens are persisted on the connection — this is
+    what fixes a connection stuck on 401/403 because it has no/expired token."""
+    from ..ingest.adapters.trakt import poll_device_token
     user = current_user()
     conn = query_one(
         "SELECT sc.config FROM source_connections sc "
@@ -283,18 +314,21 @@ def trakt_authorize_existing(conn_id: str):
     body = request.get_json(force=True, silent=True) or {}
     client_id = (body.get("client_id") or cfg.get("client_id") or "").strip()
     client_secret = (body.get("client_secret") or cfg.get("client_secret") or "").strip()
-    pin = (body.get("pin") or "").strip()
-    if not (client_id and client_secret and pin):
-        return jsonify({"error": "client_id, client_secret and pin are required"}), 400
+    device_code = (body.get("device_code") or "").strip()
+    if not (client_id and client_secret and device_code):
+        return jsonify({"error": "client_id, client_secret and device_code are required"}), 400
     try:
-        tokens = exchange_pin(client_id, client_secret, pin)
+        result = poll_device_token(client_id, client_secret, device_code)
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": str(exc)}), 400
-    new_cfg = {**cfg, "client_id": client_id, "client_secret": client_secret,
-               **tokens, "username": cfg.get("username") or "me"}
-    execute("UPDATE source_connections SET config = %s WHERE id = %s",
-            (json.dumps(new_cfg), conn_id))
-    return jsonify({"ok": True})
+    if result.get("status") == "authorized":
+        tokens = {k: result[k] for k in ("access_token", "refresh_token", "token_expires_at")
+                  if k in result}
+        new_cfg = {**cfg, "client_id": client_id, "client_secret": client_secret,
+                   **tokens, "username": cfg.get("username") or "me"}
+        execute("UPDATE source_connections SET config = %s WHERE id = %s",
+                (json.dumps(new_cfg), conn_id))
+    return jsonify({"ok": True, "status": result.get("status")})
 
 
 @bp.post("/connections/<conn_id>/sync")
