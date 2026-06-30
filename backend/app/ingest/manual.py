@@ -207,3 +207,40 @@ def delete_movie_watch(user_ids: list[str], title_id: str,
 def _one(cur, sql: str, params: tuple):
     cur.execute(sql, params)
     return cur.fetchone()
+
+
+def delete_title(title_id: str) -> dict:
+    """Hard-delete a whole title (movie or series) from the catalog and every
+    watch event that references it, then rebuild the affected daily aggregates.
+
+    Episodes, cast/crew links, genres and attribution rows cascade off the
+    ``titles`` row automatically; ``watch_events.title_id`` is ``ON DELETE SET
+    NULL`` so those events are removed explicitly here (otherwise they'd linger
+    as orphaned, title-less rows that still count toward watch time). Live
+    ``scrobble_sessions`` keep their row but lose the link (SET NULL).
+
+    Returns ``{"status": "ok", "title": <name>, "removed_events": n}`` or
+    ``{"status": "no_title"}`` when the id doesn't exist."""
+    with connection() as conn, conn.cursor() as cur:
+        t = _one(cur, "SELECT id, title FROM titles WHERE id = %s", (title_id,))
+        if not t:
+            return {"status": "no_title", "removed_events": 0}
+        # Capture (user, provider, date) tuples before deleting so we can rebuild
+        # the precomputed daily aggregates for exactly the affected days.
+        cur.execute(
+            "SELECT DISTINCT user_id, provider_id, watched_date "
+            "FROM watch_events WHERE title_id = %s",
+            (str(title_id),),
+        )
+        affected: dict[tuple[str, str], list[dt.date]] = {}
+        for r in cur.fetchall():
+            key = (str(r["user_id"]), str(r["provider_id"]))
+            affected.setdefault(key, []).append(r["watched_date"])
+        cur.execute("DELETE FROM watch_events WHERE title_id = %s RETURNING id",
+                    (str(title_id),))
+        removed = len(cur.fetchall())
+        # Drop the catalog row last; episodes/people/genres/attribution cascade.
+        cur.execute("DELETE FROM titles WHERE id = %s", (str(title_id),))
+        for (uid, pid), dates in affected.items():
+            _recompute(cur, uid, pid, dates)
+        return {"status": "ok", "title": t["title"], "removed_events": removed}

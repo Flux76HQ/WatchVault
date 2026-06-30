@@ -340,6 +340,12 @@ const de = {
   "title.seasonMarked": "{n} Folgen markiert",
   "title.watchAdded": "Sehdatum hinzugefügt",
   "title.watchRemoved": "Sehdatum entfernt",
+  "title.deleteTitle": "Aus Datenbank löschen",
+  "title.deleteConfirm": "„{title}“ und den gesamten Sehverlauf endgültig aus WatchVault löschen? Dies kann nicht rückgängig gemacht werden.",
+  "title.delete": "Löschen",
+  "title.deleting": "Wird gelöscht…",
+  "title.deleted": "„{title}“ gelöscht",
+  "title.deleteFailed": "Titel konnte nicht gelöscht werden",
 
   // ── Person ──────────────────────────────────────────────────────────────
   "person.biography": "Biografie",

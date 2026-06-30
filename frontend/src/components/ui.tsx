@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ApiError } from "../lib/api";
+import { api, ApiError } from "../lib/api";
+import { useApp } from "../lib/app";
 import { useT } from "../lib/i18n";
 import { enqueueEnrich } from "../lib/lazyEnrich";
 import { monthKey, monthLabel } from "../lib/format";
@@ -142,7 +143,7 @@ export function Stat({ value, label }: { value: ReactNode; label: string }) {
 }
 
 export function Poster({
-  poster, title, subtitle, badge, kind, to, enrichId,
+  poster, title, subtitle, badge, kind, to, enrichId, titleId,
 }: {
   poster?: string | null;
   title: string;
@@ -151,8 +152,25 @@ export function Poster({
   kind?: string;
   to?: string;
   enrichId?: string | null;
+  titleId?: string | null;
 }) {
   const ref = useRef<HTMLAnchorElement | HTMLDivElement | null>(null);
+  const { t } = useT();
+  const { prefs, toast } = useApp();
+
+  // The title id is needed to delete; prefer an explicit prop, fall back to the
+  // enrich id (same value at every grid callsite) or parse it out of `to`.
+  const delId =
+    titleId ?? enrichId ??
+    (to ? to.match(/^\/title\/([^/?#]+)/)?.[1] ?? null : null);
+  const canDelete = !!(prefs.expert && delId);
+
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const longPressed = useRef(false);
+  const startPt = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!enrichId || !ref.current || typeof IntersectionObserver === "undefined") return;
@@ -165,6 +183,65 @@ export function Poster({
     obs.observe(el);
     return () => obs.disconnect();
   }, [enrichId]);
+
+  useEffect(() => () => {
+    if (pressTimer.current) window.clearTimeout(pressTimer.current);
+  }, []);
+
+  const clearTimer = () => {
+    if (pressTimer.current) { window.clearTimeout(pressTimer.current); pressTimer.current = null; }
+  };
+
+  // Long-press (touch or mouse-hold) opens the delete confirmation. Movement or
+  // an early release cancels it so scrolling never triggers a delete.
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!canDelete || e.button === 2) return;
+    longPressed.current = false;
+    startPt.current = { x: e.clientX, y: e.clientY };
+    clearTimer();
+    pressTimer.current = window.setTimeout(() => {
+      longPressed.current = true;
+      setConfirm(true);
+    }, 550);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!pressTimer.current || !startPt.current) return;
+    if (Math.abs(e.clientX - startPt.current.x) > 10 ||
+        Math.abs(e.clientY - startPt.current.y) > 10) clearTimer();
+  };
+  const onClickCapture = (e: React.MouseEvent) => {
+    // Suppress the navigation that a long-press would otherwise trigger.
+    if (longPressed.current) { e.preventDefault(); e.stopPropagation(); longPressed.current = false; }
+  };
+  const onContextMenu = (e: React.MouseEvent) => {
+    if (!canDelete) return;
+    e.preventDefault();
+    setConfirm(true);
+  };
+
+  const doDelete = async () => {
+    if (!delId) return;
+    setBusy(true);
+    try {
+      await api.del(`/titles/${delId}`);
+      setConfirm(false);
+      setDeleted(true);
+      toast(t("title.deleted", { title }), "ok");
+      window.dispatchEvent(new CustomEvent("watchvault:title-deleted", { detail: delId }));
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t("title.deleteFailed"), "err");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (deleted) return null;
+
+  const pressHandlers = canDelete ? {
+    onPointerDown, onPointerMove,
+    onPointerUp: clearTimer, onPointerCancel: clearTimer, onPointerLeave: clearTimer,
+    onClickCapture, onContextMenu,
+  } : {};
 
   const inner = (
     <>
@@ -185,7 +262,52 @@ export function Poster({
       </div>
     </>
   );
-  return to
-    ? <Link ref={ref as any} to={to} className="poster-tile">{inner}</Link>
-    : <div ref={ref as any} className="poster-tile">{inner}</div>;
+
+  const tile = to
+    ? <Link ref={ref as any} to={to} className="poster-tile" {...pressHandlers}>{inner}</Link>
+    : <div ref={ref as any} className="poster-tile" {...pressHandlers}>{inner}</div>;
+
+  return (
+    <>
+      {tile}
+      {confirm && (
+        <DeleteTitleConfirm
+          title={title}
+          busy={busy}
+          onCancel={() => { if (!busy) setConfirm(false); }}
+          onConfirm={doDelete}
+        />
+      )}
+    </>
+  );
+}
+
+function DeleteTitleConfirm({
+  title, busy, onCancel, onConfirm,
+}: { title: string; busy: boolean; onCancel: () => void; onConfirm: () => void }) {
+  const { t } = useT();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+  return (
+    <div className="cinema-scrim" onMouseDown={onCancel}>
+      <div className="cinema-dialog card glass" onMouseDown={(e) => e.stopPropagation()}
+        style={{ maxWidth: 380 }}>
+        <strong style={{ fontSize: 17 }}>{t("title.deleteTitle")}</strong>
+        <p className="muted" style={{ margin: "12px 0 18px" }}>
+          {t("title.deleteConfirm", { title })}
+        </p>
+        <div className="row" style={{ gap: 10, justifyContent: "flex-end" }}>
+          <button className="btn-ghost" onClick={onCancel} disabled={busy}>
+            {t("common.cancel")}
+          </button>
+          <button className="btn-danger" onClick={onConfirm} disabled={busy}>
+            {busy ? t("title.deleting") : t("title.delete")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

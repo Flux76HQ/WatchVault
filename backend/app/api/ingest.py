@@ -11,7 +11,7 @@ from ..ingest import (ingest_events, prune_connection_libraries,
                       clear_connection_events, reset_all_data,
                       ingest_title_from_trakt, enqueue_trakt_title_syncs,
                       add_manual_movie, add_manual_episode, add_manual_season,
-                      delete_episode_watch, delete_movie_watch)
+                      delete_episode_watch, delete_movie_watch, delete_title)
 from ..ingest.adapters import get_adapter
 from ..auth.sessions import current_user, require_perm
 from ..catalog import get_or_create_movie_by_tmdb
@@ -665,6 +665,18 @@ def remove_title_watch(title_id: str):
     except ValueError:
         return jsonify({"error": "valid date required"}), 400
     result = delete_movie_watch(scope_user_ids(), title_id, date)
+    return jsonify({"ok": True, **result})
+
+
+@bp.delete("/titles/<title_id>")
+@require_perm("ingest.write")
+def delete_title_endpoint(title_id: str):
+    """Expert-mode action: permanently remove a whole title (and every watch
+    event referencing it) from the database, then rebuild affected aggregates.
+    The frontend gates the long-press that reaches this on ``prefs.expert``."""
+    result = delete_title(title_id)
+    if result.get("status") == "no_title":
+        return jsonify({"error": "title not found"}), 404
     return jsonify({"ok": True, **result})
 
 
