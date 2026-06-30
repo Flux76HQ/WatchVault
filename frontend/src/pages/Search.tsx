@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApp } from "../lib/app";
 import { useT } from "../lib/i18n";
@@ -8,6 +8,8 @@ import { IconSearch } from "../components/icons";
 import { fmtHours, fmtDate } from "../lib/format";
 
 interface Provider { key: string; name: string; }
+
+const PAGE = 60;
 
 export function Search() {
   const { scope } = useApp();
@@ -24,7 +26,11 @@ export function Search() {
   const [results, setResults] = useState<any[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  // Bumped on every filter-driven (page-0) reload so an in-flight loadMore from a
+  // previous filter set can detect it is stale and drop its appended results.
+  const reqRef = useRef(0);
 
   useEffect(() => { api.get("/providers").then(setProviders).catch(() => {}); }, []);
 
@@ -44,18 +50,55 @@ export function Search() {
   const params = useMemo(() => ({ profile: scope, q, genre, actor, platform, year, kind, lang }),
     [scope, q, genre, actor, platform, year, kind, lang]);
 
-  // debounced search
+  // debounced page-0 (re)load whenever filters change
   useEffect(() => {
     const hasFilter = q || genre || actor || platform || year || kind;
-    const t = setTimeout(async () => {
+    const id = ++reqRef.current;
+    const handle = setTimeout(async () => {
       setLoading(true); setError(null);
       try {
-        const res = await api.get("/search", params);
+        const res = await api.get("/search", { ...params, limit: PAGE, offset: 0 });
+        if (reqRef.current !== id) return;
         setResults(res.results); setTotal(res.total);
-      } catch (e) { setError(e); } finally { setLoading(false); }
+      } catch (e) {
+        if (reqRef.current === id) setError(e);
+      } finally {
+        if (reqRef.current === id) setLoading(false);
+      }
     }, hasFilter ? 280 : 0);
-    return () => clearTimeout(t);
+    return () => clearTimeout(handle);
   }, [params]);
+
+  async function loadMore() {
+    if (loadingMore || loading || !results) return;
+    const id = reqRef.current;
+    const offset = results.length;
+    setLoadingMore(true);
+    try {
+      const res = await api.get("/search", { ...params, limit: PAGE, offset });
+      if (reqRef.current !== id) return; // filters changed mid-flight → drop
+      setResults((prev) => [...(prev || []), ...res.results]);
+      setTotal(res.total);
+    } catch {
+      /* keep current results on load-more failure */
+    } finally {
+      if (reqRef.current === id) setLoadingMore(false);
+    }
+  }
+
+  const hasMore = !!results && results.length < total;
+
+  // Auto-load the next page when the sentinel scrolls into view.
+  const sentinel = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasMore) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMore();
+    }, { rootMargin: "600px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, results, loadingMore, loading, params]);
 
   const activeFilters = [genre, actor, platform, year, kind].filter(Boolean).length;
 
@@ -130,6 +173,13 @@ export function Search() {
                   subtitle={`${rt.platforms?.[0] || ""}${rt.last_watched ? " · " + fmtDate(rt.last_watched) : ""}`} />
               ))}
             </div>
+            {hasMore && (
+              <div ref={sentinel} className="row" style={{ justifyContent: "center", marginTop: 20 }}>
+                <button className="btn-ghost" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? t("common.loading") : t("search.loadMore")}
+                </button>
+              </div>
+            )}
           </>
         )}
     </>

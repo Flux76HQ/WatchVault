@@ -99,6 +99,7 @@ const en = {
   "search.noMatches": "No matches",
   "search.noMatchesHint": "Try fewer or different filters.",
   "search.titles": "{count} titles",
+  "search.loadMore": "Load more",
   "search.titleOne": "{count} title",
 
   // ── Imports ─────────────────────────────────────────────────────────────
