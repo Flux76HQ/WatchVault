@@ -276,7 +276,11 @@ const fr = {
   "settings.resetDone": "Base de données réinitialisée · {events} événements, {titles} titres et {people} personnes supprimés",
 
   // ── Attribution log ─────────────────────────────────────────────────────
-  "attrib.title": "Journal d'attribution",
+  "attrib.title": "Journal d'import",
+  "attrib.selectAll": "Tout sélectionner",
+  "attrib.selectedCount": "{n} sélectionné(s)",
+  "attrib.assign": "Attribuer",
+  "attrib.bulkDone": "{n} mis à jour",
   "attrib.help": "Pourquoi les titres Trakt et manuels aboutissent sur un service de streaming ou sur \"Autre\". Les films n'ont pas de réseaux TMDB, ils retombent donc toujours sur \"Autre\".",
   "attrib.filterAll": "Tous",
   "attrib.filterOther": "Seulement Autre",

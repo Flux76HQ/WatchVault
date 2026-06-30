@@ -276,7 +276,11 @@ const de = {
   "settings.resetDone": "Datenbank zurückgesetzt · {events} Ereignisse, {titles} Titel und {people} Personen entfernt",
 
   // ── Attribution log ─────────────────────────────────────────────────────
-  "attrib.title": "Zuordnungsprotokoll",
+  "attrib.title": "Import-Log",
+  "attrib.selectAll": "Alle auswählen",
+  "attrib.selectedCount": "{n} ausgewählt",
+  "attrib.assign": "Zuweisen",
+  "attrib.bulkDone": "{n} aktualisiert",
   "attrib.help": "Warum Trakt- und manuelle Titel auf einem Streamingdienst oder bei \"Sonstige\" landen. Filme haben keine TMDB-Netzwerke und fallen daher immer auf \"Sonstige\" zurück.",
   "attrib.filterAll": "Alle",
   "attrib.filterOther": "Nur Sonstige",

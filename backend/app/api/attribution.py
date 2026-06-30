@@ -12,6 +12,7 @@ from flask import Blueprint, jsonify, request
 
 from ..db import execute, query_all, query_one
 from ..auth.sessions import require_perm
+from ._common import poster_url
 
 bp = Blueprint("attribution", __name__, url_prefix="/api/attribution-log")
 
@@ -42,9 +43,11 @@ def list_log():
     rows = query_all(
         "SELECT al.title_id, al.title, al.kind, al.provider_key, al.reason, "
         "  al.networks, al.events, al.moved, al.collapsed, al.updated_at, "
-        "  p.name AS provider_name, p.color AS provider_color "
+        "  p.name AS provider_name, p.color AS provider_color, "
+        "  ti.poster_path AS poster_path "
         "FROM attribution_log al "
         "LEFT JOIN providers p ON p.key = al.provider_key "
+        "LEFT JOIN titles ti ON ti.id = al.title_id "
         f"{where} "
         "ORDER BY al.updated_at DESC LIMIT %s",
         (*params, limit),
@@ -67,6 +70,7 @@ def list_log():
                 "provider_key": r["provider_key"],
                 "provider_name": r["provider_name"],
                 "provider_color": r["provider_color"],
+                "poster": poster_url(r["poster_path"]),
                 "reason": r["reason"],
                 "networks": r["networks"] or [],
                 "events": int(r["events"] or 0),
@@ -127,3 +131,41 @@ def reattribute_all_route():
         "  SELECT 1 FROM background_jobs WHERE kind='reattribute_trakt_all' "
         "  AND status IN ('pending','running'))")
     return jsonify({"ok": True, "queued": True})
+
+
+@bp.post("/bulk-platform")
+@require_perm("ingest.write")
+def bulk_platform():
+    """Assign a manual platform override to many titles at once.
+
+    Body: ``{"title_ids": [...], "provider_id": "<uuid>"|null}``. A ``null``
+    provider clears the override back to "Auto". Each title's soft (Trakt +
+    manual) events are immediately re-attributed onto the chosen provider;
+    real digital syncs (Plex/Jellyfin/Netflix/CSV) are left untouched. Powers
+    the Import Log bulk-assign action."""
+    body = request.get_json(silent=True) or {}
+    title_ids = body.get("title_ids")
+    provider_id = body.get("provider_id")
+    if not isinstance(title_ids, list) or not title_ids:
+        return jsonify({"error": "title_ids required"}), 400
+
+    if provider_id:
+        prov = query_one("SELECT id FROM providers WHERE id = %s", (provider_id,))
+        if not prov:
+            return jsonify({"error": "unknown provider"}), 400
+
+    from ..networks import reattribute_title_events
+    updated = 0
+    for tid in title_ids:
+        if not query_one("SELECT id FROM titles WHERE id = %s", (tid,)):
+            continue
+        if provider_id:
+            execute("UPDATE titles SET platform_override_provider_id = %s WHERE id = %s",
+                    (provider_id, tid))
+        else:
+            execute("UPDATE titles SET platform_override_provider_id = NULL WHERE id = %s",
+                    (tid,))
+        reattribute_title_events(tid)
+        updated += 1
+
+    return jsonify({"ok": True, "updated": updated})
