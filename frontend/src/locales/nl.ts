@@ -225,6 +225,8 @@ const nl = {
   "settings.dark": "Donker",
   "settings.system": "Systeem",
   "settings.accentColor": "Accentkleur",
+  "settings.defaultProfile": "Standaardprofiel",
+  "settings.defaultProfileHint": "Het profiel dat wordt getoond als je WatchVault opent.",
   "settings.expert": "Expertmodus",
   "settings.expertHint": "Toon geavanceerde, technische onderdelen zoals het attributielog en de opnieuw-toewijzen-acties.",
   "common.on": "Aan",

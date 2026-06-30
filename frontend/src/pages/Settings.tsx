@@ -10,8 +10,11 @@ import { IconFilm, IconTv } from "../components/icons";
 import { ACCENTS, fmtDate } from "../lib/format";
 
 function Appearance() {
-  const { prefs, savePrefs } = useApp();
+  const { prefs, savePrefs, profiles, user, can } = useApp();
   const { t } = useT();
+  const ownId = profiles.find((p) => p.id === user?.id)?.id;
+  const defaultProfile = prefs.default_profile || ownId || "all";
+  const cinemaOn = prefs.cinemaAdd !== false;
   return (
     <Section title={t("settings.appearance")}>
       <div className="card col" style={{ gap: 18 }}>
@@ -37,6 +40,31 @@ function Appearance() {
             </label>
           </div>
         </div>
+        <div>
+          <label>{t("settings.defaultProfile")}</label>
+          <div className="row" style={{ gap: 12, alignItems: "center" }}>
+            <select value={defaultProfile} onChange={(e) => savePrefs({ default_profile: e.target.value })}
+              style={{ width: "auto", minWidth: 180 }}>
+              <option value="all">{t("common.household")}</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>{p.display_name}</option>
+              ))}
+            </select>
+            <span className="caption" style={{ flex: 1 }}>{t("settings.defaultProfileHint")}</span>
+          </div>
+        </div>
+        {can("ingest.write") && (
+          <div>
+            <label>{t("cinema.add")}</label>
+            <div className="row" style={{ gap: 12, alignItems: "center" }}>
+              <div className="seg">
+                <button className={cinemaOn ? "active" : ""} onClick={() => savePrefs({ cinemaAdd: true })}>{t("common.on")}</button>
+                <button className={!cinemaOn ? "active" : ""} onClick={() => savePrefs({ cinemaAdd: false })}>{t("common.off")}</button>
+              </div>
+              <span className="caption" style={{ flex: 1 }}>{t("cinema.toggleHint")}</span>
+            </div>
+          </div>
+        )}
         <div>
           <label>{t("settings.expert")}</label>
           <div className="row" style={{ gap: 12, alignItems: "center" }}>
@@ -423,24 +451,6 @@ function DangerZone() {
   );
 }
 
-function ExpertTools() {
-  const { t } = useT();
-  const { prefs, can, savePrefs } = useApp();
-  if (!can("ingest.write") || !prefs.expert) return null;
-  const on = prefs.cinemaAdd !== false;
-  return (
-    <Section title={t("cinema.add")}>
-      <div className="row" style={{ gap: 12, alignItems: "center" }}>
-        <div className="seg">
-          <button className={on ? "active" : ""} onClick={() => savePrefs({ cinemaAdd: true })}>{t("common.on")}</button>
-          <button className={!on ? "active" : ""} onClick={() => savePrefs({ cinemaAdd: false })}>{t("common.off")}</button>
-        </div>
-        <span className="caption" style={{ flex: 1 }}>{t("cinema.toggleHint")}</span>
-      </div>
-    </Section>
-  );
-}
-
 function ScrobbleSettings() {
   const { prefs, can, toast } = useApp();
   const { t } = useT();
@@ -573,7 +583,6 @@ export function Settings() {
     <>
       <h1 className="large-title" style={{ marginBottom: 8 }}>{t("settings.title")}</h1>
       <Appearance />
-      <ExpertTools />
       <ScrobbleSettings />
       <Household />
       <Plugins />

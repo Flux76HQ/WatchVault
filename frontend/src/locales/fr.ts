@@ -225,6 +225,8 @@ const fr = {
   "settings.dark": "Sombre",
   "settings.system": "Système",
   "settings.accentColor": "Couleur d'accent",
+  "settings.defaultProfile": "Profil par défaut",
+  "settings.defaultProfileHint": "Le profil affiché à l'ouverture de WatchVault.",
   "settings.expert": "Mode expert",
   "settings.expertHint": "Afficher les sections avancées et techniques comme le journal d'attribution et les actions de réattribution.",
   "common.on": "Activé",

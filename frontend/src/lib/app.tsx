@@ -55,7 +55,7 @@ interface AppCtx {
   can: (perm: string) => boolean;
 }
 
-const DEFAULT_PREFS: Prefs = { theme: "system", accent: "#0a84ff", default_profile: "all", language: "en", expert: false, cinemaAdd: true };
+const DEFAULT_PREFS: Prefs = { theme: "system", accent: "#0a84ff", default_profile: "", language: "en", expert: false, cinemaAdd: true };
 
 const Ctx = createContext<AppCtx>(null as any);
 export const useApp = () => useContext(Ctx);
@@ -102,13 +102,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadPrefs = useCallback(async () => {
+  const loadPrefs = useCallback(async (ownId?: string) => {
     try {
       const p = await api.get("/preferences");
       const merged = { ...DEFAULT_PREFS, ...p };
       setPrefs(merged);
       applyTheme(merged);
-      setScope((s) => (s === "all" ? merged.default_profile || "all" : s));
+      setScope((s) => (s === "all" ? merged.default_profile || ownId || "all" : s));
     } catch {
       /* keep defaults */
     }
@@ -147,7 +147,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // When user becomes available, load prefs + profiles
   useEffect(() => {
     if (user) {
-      loadPrefs();
+      loadPrefs(user.id);
       refreshProfiles();
     }
   }, [user, loadPrefs, refreshProfiles]);
