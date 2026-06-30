@@ -69,7 +69,51 @@ server, and a single-container deployment (nginx + Gunicorn + worker + Postgres)
   </tr>
 </table>
 
-<sub>Click any thumbnail to view it full-size. Mobile screenshots coming soon.</sub>
+<sub>Click any thumbnail to view it full-size.</sub>
+
+### Mobile
+
+<table>
+  <tr>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/01-dashboard.jpg"><img src="docs/screenshots/mobile/01-dashboard.jpg" width="100%" alt="Dashboard (mobile)"></a>
+      <br><sub><b>Dashboard</b></sub>
+    </td>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/03-overviews.jpg"><img src="docs/screenshots/mobile/03-overviews.jpg" width="100%" alt="Overviews (mobile)"></a>
+      <br><sub><b>Overviews</b></sub>
+    </td>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/04-search.jpg"><img src="docs/screenshots/mobile/04-search.jpg" width="100%" alt="Search (mobile)"></a>
+      <br><sub><b>Search</b></sub>
+    </td>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/05-settings.jpg"><img src="docs/screenshots/mobile/05-settings.jpg" width="100%" alt="Settings (mobile)"></a>
+      <br><sub><b>Settings</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/02-title-detail.jpg"><img src="docs/screenshots/mobile/02-title-detail.jpg" width="100%" alt="Title detail (mobile)"></a>
+      <br><sub><b>Title detail</b></sub>
+    </td>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/08-film-detail.jpg"><img src="docs/screenshots/mobile/08-film-detail.jpg" width="100%" alt="Film detail (mobile)"></a>
+      <br><sub><b>Film detail</b></sub>
+    </td>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/06-add-cinema.jpg"><img src="docs/screenshots/mobile/06-add-cinema.jpg" width="100%" alt="Add a cinema visit (mobile)"></a>
+      <br><sub><b>Add a cinema visit</b></sub>
+    </td>
+    <td width="25%" valign="top">
+      <a href="docs/screenshots/mobile/07-cinema-date.jpg"><img src="docs/screenshots/mobile/07-cinema-date.jpg" width="100%" alt="Pick the date (mobile)"></a>
+      <br><sub><b>…pick the date</b></sub>
+    </td>
+  </tr>
+</table>
+
+<sub>The PWA installs to the home screen and runs full-screen, with native-feeling
+gestures (no pinch-zoom, no long-press text callouts).</sub>
 
 ---
 
