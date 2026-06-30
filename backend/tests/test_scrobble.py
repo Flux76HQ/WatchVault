@@ -488,6 +488,9 @@ def test_now_playing_query_drops_committed_at_filter(monkeypatch):
     assert "s.state <> 'stopped'" in captured["sql"]
     assert "committed_at IS NULL" not in captured["sql"]
     assert "ORDER BY s.updated_at DESC" in captured["sql"]
+    # A session paused for >10 minutes is hidden from the dashboard.
+    assert "s.state = 'paused'" in captured["sql"]
+    assert "interval '10 minutes'" in captured["sql"]
 
 
 def test_expire_stale_already_committed_marks_stopped_without_reingest(monkeypatch):
