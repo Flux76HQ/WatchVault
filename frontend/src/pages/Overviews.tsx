@@ -4,26 +4,12 @@ import { useApp } from "../lib/app";
 import { useT, useGenre, providerLabel } from "../lib/i18n";
 import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
-import { TrendArea, StackedBars, HBars } from "../components/charts";
+import { TrendArea, StackedBars } from "../components/charts";
 import { Heatmap } from "../components/Heatmap";
-import { Loading, ErrorState, Poster, Section } from "../components/ui";
+import { Loading, ErrorState, Poster, Section, Seg, MonthNav, RangeSeg, type Range } from "../components/ui";
 import { fmtDate, fmtHours, fmtMonth, monthKey, monthLabel } from "../lib/format";
 
 type Gran = "day" | "week" | "month";
-
-function Seg<T extends string>({ value, onChange, options }: {
-  value: T; onChange: (v: T) => void; options: { value: T; label: string }[];
-}) {
-  return (
-    <div className="seg">
-      {options.map((o) => (
-        <button key={o.value} className={value === o.value ? "active" : ""} onClick={() => onChange(o.value)}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function HoursTrend({ scope }: { scope: string }) {
   const { t } = useT();
@@ -160,8 +146,7 @@ function MonthlyTitles({ scope }: { scope: string }) {
 
   return (
     <Section title={t("overviews.watchedPerMonth")}
-      right={<input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-        style={{ width: "auto", minHeight: 36, padding: "6px 10px" }} />}>
+      right={<MonthNav value={month} onChange={setMonth} />}>
       {loading ? <Loading /> : error ? <ErrorState error={error} retry={reload} /> :
         data && data.length ? (
           <div className="poster-grid">
@@ -180,21 +165,38 @@ function MonthlyTitles({ scope }: { scope: string }) {
 function GenreActor({ scope }: { scope: string }) {
   const { t } = useT();
   const tGenre = useGenre();
-  const genre = useFetch<any[]>(() => api.get("/stats/by-genre", { profile: scope }), [scope]);
-  const actor = useFetch<any[]>(() => api.get("/stats/by-actor", { profile: scope, limit: 12 }), [scope]);
+  const [genreRange, setGenreRange] = useState<Range>("all");
+  const [actorRange, setActorRange] = useState<Range>("all");
+  const genre = useFetch<any[]>(() => api.get("/stats/by-genre", { profile: scope, range: genreRange }), [scope, genreRange]);
+  const actor = useFetch<any[]>(() => api.get("/stats/by-actor", { profile: scope, limit: 12, range: actorRange }), [scope, actorRange]);
 
-  const genreData = (genre.data || []).slice(0, 10).map((g) => ({ label: tGenre(g.genre), value: g.hours }));
+  const genreData = (genre.data || []).slice(0, 10);
+  const genreMax = Math.max(...genreData.map((g) => g.hours), 1);
 
   return (
     <div className="grid-2">
-      <Section title={t("overviews.timePerGenre")}>
+      <Section title={t("overviews.timePerGenre")}
+        right={<RangeSeg value={genreRange} onChange={setGenreRange} />}>
         <div className="card">
           {genre.loading ? <Loading /> :
-            genreData.length ? <HBars data={genreData} height={Math.max(220, genreData.length * 30)} /> :
-              <p className="muted">{t("overviews.noGenreData")}</p>}
+            genreData.length ? (
+              <div className="col" style={{ gap: 10 }}>
+                {genreData.map((g) => (
+                  <Link key={g.genre_id} to={`/genre/${g.genre_id}`} className="row"
+                    style={{ gap: 12, color: "inherit", textDecoration: "none" }}>
+                    <div className="col" style={{ flex: 1, gap: 4 }}>
+                      <div className="row"><span style={{ fontWeight: 600, fontSize: "0.9rem", flex: 1 }}>{tGenre(g.genre)}</span>
+                        <span className="caption">{fmtHours(g.hours)}</span></div>
+                      <div className="bar-track"><div className="bar-fill" style={{ width: `${(g.hours / genreMax) * 100}%` }} /></div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : <p className="muted">{t("overviews.noGenreData")}</p>}
         </div>
       </Section>
-      <Section title={t("overviews.timePerActor")}>
+      <Section title={t("overviews.timePerActor")}
+        right={<RangeSeg value={actorRange} onChange={setActorRange} />}>
         <div className="card">
           {actor.loading ? <Loading /> :
             actor.data && actor.data.length ? (

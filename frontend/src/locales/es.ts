@@ -96,6 +96,12 @@ const es = {
   "overviews.timePerActor": "Tiempo por actor",
   "overviews.noGenreData": "Aún no hay datos de género — enriquece los títulos con TMDB en Ajustes.",
   "overviews.noCastData": "Aún no hay datos de reparto — enriquece los títulos con TMDB en Ajustes.",
+  "overviews.year": "Año",
+  "common.all": "Todo",
+  "common.prevMonth": "Mes anterior",
+  "common.nextMonth": "Mes siguiente",
+  "genre.titlesIn": "Contenido visto · {genre}",
+  "genre.empty": "Aún no has visto nada de este género.",
 
   // ── Search ──────────────────────────────────────────────────────────────
   "search.title": "Buscar",

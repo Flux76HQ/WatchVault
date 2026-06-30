@@ -11,7 +11,7 @@ from decimal import Decimal
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.api.stats import _hours, _fold_digital_library  # noqa: E402
+from app.api.stats import _hours, _fold_digital_library, _range_clause  # noqa: E402
 
 
 def test_hours_returns_float_for_decimal_seconds():
@@ -59,3 +59,21 @@ def test_fold_digital_library_groups_per_period():
     assert jan["key"] == "digital_library" and jan["events"] == 3 and jan["seconds"] == 30.0
     feb = next(r for r in out if r["period"] == "2025-02")
     assert feb["key"] == "digital_library" and feb["events"] == 3
+
+
+def test_range_clause_whitelists_known_ranges():
+    # Known ranges produce a date_trunc filter on the given column.
+    for rng, trunc in (("week", "week"), ("month", "month"), ("year", "year")):
+        clause = _range_clause(rng, "a.watched_date")
+        assert clause == f" AND a.watched_date >= date_trunc('{trunc}', now())"
+    # Case-insensitive.
+    assert _range_clause("MONTH", "we.watched_date") == \
+        " AND we.watched_date >= date_trunc('month', now())"
+
+
+def test_range_clause_empty_for_all_or_unknown():
+    # 'all', None and anything unrecognised mean no filter (full history).
+    assert _range_clause("all", "a.watched_date") == ""
+    assert _range_clause(None, "a.watched_date") == ""
+    assert _range_clause("", "a.watched_date") == ""
+    assert _range_clause("'; DROP TABLE x; --", "a.watched_date") == ""
