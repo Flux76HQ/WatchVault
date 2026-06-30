@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useApp } from "../lib/app";
-import { useT, useGenre } from "../lib/i18n";
+import { useT, useGenre, providerLabel } from "../lib/i18n";
 import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Loading, ErrorState, BackLink } from "../components/ui";
@@ -266,6 +266,17 @@ export function TitleDetail() {
               {ti.runtime_minutes && <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{t("title.min", { n: ti.runtime_minutes })}</span>}
             </div>
             <div className="chips">{ti.genres?.map((g: string) => <span key={g} className="chip">{tGenre(g)}</span>)}</div>
+            {ti.networks?.length > 0 && (
+              <div className="chips" style={{ alignItems: "center" }}>
+                <span className="caption" style={{ marginRight: 2 }}>{t("title.network")}:</span>
+                {ti.networks.map((n: any, i: number) => (
+                  <span key={i} className="chip row" style={{ gap: 6, alignItems: "center" }}>
+                    {n.logo && <img src={n.logo} alt="" style={{ height: 16, width: "auto", borderRadius: 3 }} />}
+                    {n.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -330,7 +341,7 @@ export function TitleDetail() {
                       ? `S${e.season}${e.episode != null ? `E${e.episode}` : ""}${e.raw_title ? " · " + e.raw_title : ""}`
                       : e.raw_title || ti.title}
                   </strong>
-                  <span className="caption">{e.platform} · {e.who}</span>
+                  <span className="caption">{providerLabel(t, e.platform_key, e.platform)} · {e.who}</span>
                 </div>
                 <span className="caption">{fmtDate(e.date)}</span>
               </div>

@@ -212,6 +212,70 @@ def test_find_match_uses_year_fallback():
     assert plugin.calls[0] == ("Some Show", 1999, "series")
 
 
+def test_tmdb_series_extracts_networks():
+    plugin = _tmdb_plugin()
+    data = {
+        "id": 1396, "name": "Severance", "first_air_date": "2022-02-18",
+        "episode_run_time": [50], "genres": [{"name": "Drama"}],
+        "credits": {"cast": [], "crew": []},
+        "number_of_seasons": 2, "number_of_episodes": 19, "seasons": [],
+        "networks": [
+            {"id": 2552, "name": "Apple TV+", "logo_path": "/apple.png"},
+            {"id": 0, "name": "", "logo_path": None},  # blank -> skipped
+        ],
+    }
+    details = plugin._normalize(data, "series")
+    assert details["networks"] == [
+        {"id": 2552, "name": "Apple TV+", "logo_path": "/apple.png"}]
+
+
+def test_tmdb_movie_has_no_networks():
+    plugin = _tmdb_plugin()
+    details = plugin._normalize(
+        {"id": 1, "title": "X", "release_date": "2020-01-01", "runtime": 90,
+         "genres": [], "credits": {"cast": [], "crew": []}}, "movie")
+    assert "networks" not in details
+
+
+class _FakeCursor:
+    """Minimal cursor that resolves provider keys against a fixed catalogue."""
+    def __init__(self, present):
+        self.present = present  # set of provider keys that exist
+        self._row = None
+
+    def execute(self, sql, params=None):
+        key = params[0] if params else None
+        if key == "generic" or "key = 'generic'" in sql:
+            self._row = {"id": "generic-id", "key": "generic"}
+        elif key in self.present:
+            self._row = {"id": f"{key}-id", "key": key}
+        else:
+            self._row = None
+
+    def fetchone(self):
+        return self._row
+
+
+def test_resolve_network_provider_maps_known_networks():
+    from app.networks import resolve_network_provider
+    cur = _FakeCursor({"appletv", "prime", "hbomax", "netflix"})
+    assert resolve_network_provider(cur, [{"name": "Apple TV+"}]) == ("appletv-id", "appletv")
+    assert resolve_network_provider(cur, [{"name": "Amazon Prime Video"}]) == ("prime-id", "prime")
+    assert resolve_network_provider(cur, [{"name": "HBO Max"}]) == ("hbomax-id", "hbomax")
+    assert resolve_network_provider(cur, [{"name": "Max"}]) == ("hbomax-id", "hbomax")
+
+
+def test_resolve_network_provider_falls_back_to_generic():
+    from app.networks import resolve_network_provider
+    cur = _FakeCursor({"netflix"})
+    # unknown network name
+    assert resolve_network_provider(cur, [{"name": "Some Obscure Channel"}]) == ("generic-id", "generic")
+    # no networks at all (e.g. movies)
+    assert resolve_network_provider(cur, []) == ("generic-id", "generic")
+    # known alias but provider not in catalogue -> generic
+    assert resolve_network_provider(cur, [{"name": "Apple TV+"}]) == ("generic-id", "generic")
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))

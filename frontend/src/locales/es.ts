@@ -252,6 +252,8 @@ const es = {
   "title.traktSynced": "Sync de Trakt: {n} nuevos añadidos",
   "title.traktNothing": "Trakt no tenía nada nuevo para este título",
   "title.watchHistory": "Historial de visualización",
+  "title.network": "Cadena",
+  "provider.generic": "Otro",
   "title.noEvents": "No hay eventos de visualización para este perfil.",
   "title.episodes": "Episodios",
   "title.seasonN": "Temporada {n}",
