@@ -1,0 +1,128 @@
+blueprint:
+  name: WatchVault — realtime scrobble
+  description: >
+    Sends realtime now-playing from a media_player to WatchVault:
+    play / pause / resume / stop plus an 'update' tick every 30 seconds.
+    Reads every media attribute as individual scalars (from
+    trigger.from_state on stop, otherwise live via state_attr) so a dict
+    or datetime never ends up in an automation variable — that avoids the
+    well-known from_state stringification bug ('str object has no attribute
+    get'). The WatchVault backend tracks the now-playing session and commits
+    it itself once progress crosses the configured threshold. Requires the
+    'watchvault_post' rest_command in your configuration.yaml.
+  domain: automation
+  homeassistant:
+    min_version: "2024.10.0"
+  input:
+    media_player:
+      name: Media player
+      description: The player to follow in realtime (e.g. your Apple TV).
+      selector:
+        entity:
+          filter:
+            domain: media_player
+    endpoint:
+      name: WatchVault endpoint
+      description: Full URL of the generic scrobble endpoint.
+      default: https://watchvault.tld/api/scrobble/generic
+      selector:
+        text: {}
+    token:
+      name: API token
+      description: WatchVault wvapi_ token with ingest.write permission.
+      selector:
+        text:
+          type: password
+    account:
+      name: Account label (optional)
+      description: >
+        Profile label in WatchVault (scrobble_account_map). Leave empty to
+        fall back to the user that owns the token.
+      default: ""
+      selector:
+        text: {}
+
+mode: queued
+max: 15
+
+variables:
+  wv_entity: !input media_player
+  wv_url: !input endpoint
+  wv_token: !input token
+  wv_account: !input account
+
+triggers:
+  - trigger: state
+    id: playing
+    entity_id: !input media_player
+    to: "playing"
+  - trigger: state
+    id: paused
+    entity_id: !input media_player
+    to: "paused"
+  - trigger: state
+    id: stopped
+    entity_id: !input media_player
+    from:
+      - "playing"
+      - "paused"
+    to:
+      - "idle"
+      - "off"
+      - "standby"
+      - "stopped"
+      - "unavailable"
+  - trigger: time_pattern
+    id: tick
+    seconds: "/30"
+
+conditions: []
+
+actions:
+  - variables:
+      tid: "{{ trigger.id if (trigger is defined and trigger is mapping and trigger.id is defined) else 'tick' }}"
+  - variables:
+      use_from: "{{ tid == 'stopped' }}"
+      event: "{{ 'stop' if tid == 'stopped' else 'pause' if tid == 'paused' else 'play' if tid == 'playing' else 'update' }}"
+  - variables:
+      app_id: "{{ (trigger.from_state.attributes.get('app_id') if use_from else state_attr(wv_entity, 'app_id')) | default('') }}"
+      content_id: "{{ (trigger.from_state.attributes.get('media_content_id') if use_from else state_attr(wv_entity, 'media_content_id')) | default('') }}"
+      duration: "{{ (trigger.from_state.attributes.get('media_duration') if use_from else state_attr(wv_entity, 'media_duration')) | float(0) }}"
+      title: "{{ ((trigger.from_state.attributes.get('media_title') if use_from else state_attr(wv_entity, 'media_title')) or (trigger.from_state.attributes.get('media_artist') if use_from else state_attr(wv_entity, 'media_artist')) or '') | string | trim }}"
+  - variables:
+      position: >-
+        {% set base = (trigger.from_state.attributes.get('media_position') if use_from else state_attr(wv_entity, 'media_position')) | float(0) %}
+        {% set upd = (trigger.from_state.attributes.get('media_position_updated_at') if use_from else state_attr(wv_entity, 'media_position_updated_at')) %}
+        {% set live = event in ['play', 'update'] %}
+        {% set elapsed = (as_timestamp(now()) - as_timestamp(upd)) if (live and upd) else 0 %}
+        {% set pos = base + (elapsed if elapsed > 0 else 0) %}
+        {{ [pos, duration] | min if duration > 0 else pos }}
+  - variables:
+      progress: "{{ ((position | float(0) / duration) * 100) | round(1) if duration > 0 else 0 }}"
+      kind: "{{ 'series' if (duration | float(0) > 0 and duration | float(0) <= 4200) else 'movie' }}"
+      platform: >-
+        {% set m = {'com.wbd.hbomax': 'hbomax', 'com.netflix.Netflix': 'netflix',
+            'com.disney.disneyplus': 'disney', 'com.amazon.aiv.AIVApp': 'prime',
+            'nl.rtl.videoland.v2': 'videoland',
+            'com.viaplay.skyshowtime.SkyShowtime': 'skyshowtime',
+            'nl.nlziet.app': 'nlziet',
+            'com.apple.tv': 'appletv', 'com.apple.TVWatchList': 'appletv'} %}
+        {{ m.get(app_id, 'appletv' if app_id.startswith('com.apple.') else '') }}
+  - condition: template
+    value_template: "{{ title | length > 0 }}"
+  - action: rest_command.watchvault_post
+    data:
+      url: "{{ wv_url }}"
+      token: "{{ wv_token }}"
+      payload: >-
+        {{ {'event': event, 'source': 'homeassistant', 'title': title,
+            'kind': kind,
+            'platform': platform, 'progress_percent': progress | float(0),
+            'position_seconds': position | int(0),
+            'duration_seconds': duration | int(0),
+            'dedup_key': ('appletv:' ~ content_id) if content_id else '',
+            'account': wv_account} | to_json }}
+  - action: logbook.log
+    data:
+      name: WatchVault
+      message: "{{ event }}: {{ title }} [{{ kind }}] ({{ progress }}%, {{ platform or 'homeassistant' }})"

@@ -176,6 +176,96 @@ All scoped per profile **or** combined for the whole household:
 
 ---
 
+## Home Assistant integration (live scrobbling)
+
+WatchVault can receive **realtime now-playing** from any Home Assistant
+`media_player` (Apple TV, Chromecast, a Plex client, …) and turn it into live
+progress on the **Now playing** dashboard — plus a committed history entry once
+the title crosses the completion threshold. It behaves just like Plex's
+scrobbler: `play` / `pause` / `resume` / `stop` plus a periodic `update` tick.
+
+### How it works
+
+```
+Apple TV / media_player ──► Blueprint (state + time_pattern triggers)
+                        ──► builds a JSON payload (title, progress, platform, kind…)
+                        ──► rest_command.watchvault_post (URL + Bearer token)
+                        ──► POST /api/scrobble/generic
+                        ──► scrobble_sessions UPSERT → now-playing + auto-commit
+```
+
+The blueprint reads every media attribute as an individual scalar (from
+`trigger.from_state` on stop, otherwise live via `state_attr`) so a dict or
+datetime never lands in an automation variable — this avoids the well-known
+`'str object has no attribute get'` from_state stringification bug.
+
+### 1. Create an API token
+
+In WatchVault, create a `wvapi_` token with the **`ingest.write`** permission.
+
+### 2. Add the `rest_command` to `configuration.yaml`
+
+Home Assistant can't POST with custom headers straight from a blueprint, so a
+small generic `rest_command` performs the HTTP call. Add this once and restart
+Home Assistant (a new top-level integration is not picked up by a reload):
+
+```yaml
+rest_command:
+  watchvault_post:
+    url: "{{ url }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ token }}"
+    content_type: "application/json"
+    payload: "{{ payload }}"
+```
+
+### 3. Import the blueprint
+
+[![Open your Home Assistant instance and show the blueprint import dialog with the WatchVault realtime blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgist.githubusercontent.com%2FhelmerzNL%2Fe883eb8598b61418333ea9e7d94f2bbf%2Fraw%2Fwatchvault-realtime.yaml)
+
+> The button imports from a public gist mirror of
+> [`homeassistant/watchvault_realtime.yaml`](homeassistant/watchvault_realtime.yaml).
+> Home Assistant must be able to fetch the blueprint URL over the internet, so the
+> canonical copy in this (private) repo is mirrored to the gist for the one-click
+> import.
+
+Then create an automation from the blueprint and fill in the inputs.
+
+### Blueprint inputs
+
+| Input | Required | Description |
+|---|---|---|
+| **Media player** | yes | The `media_player` entity to follow (e.g. `media_player.woonkamer_appletv`). |
+| **WatchVault endpoint** | yes | Full URL of the generic scrobble endpoint. Default `https://watchvault.tld/api/scrobble/generic`. |
+| **API token** | yes | The `wvapi_` token with `ingest.write`. |
+| **Account label** | no | Profile label (`scrobble_account_map`). Empty = the token's own user. |
+
+### What the blueprint sends
+
+`POST /api/scrobble/generic` with a JSON body:
+
+| Field | Notes |
+|---|---|
+| `event` | `play` / `pause` / `update` / `stop` (mapped from the trigger). |
+| `title` | `media_title`, falling back to `media_artist` (HBO Max puts the title there). An empty title skips the event. |
+| `source` | `homeassistant`. |
+| `platform` | Provider key derived from `app_id` (`com.wbd.hbomax`→`hbomax`, `com.apple.*`→`appletv`, …). |
+| `kind` | `series` when `media_duration ≤ 4200s` (≤ 70 min), otherwise `movie`. Apple TV exposes no season/episode, so duration is used as a heuristic. |
+| `progress_percent`, `position_seconds`, `duration_seconds` | Live progress; position is extrapolated from `media_position` + elapsed time while playing. |
+| `dedup_key` | `appletv:<media_content_id>` — stable per playback so repeats don't create duplicate history. |
+| `account` | The optional account label. |
+
+The backend keeps the session live in `scrobble_sessions` and commits it to
+history once `progress_percent` reaches `app_settings.scrobble_commit_threshold`
+(default 90). The now-playing card stays visible after the commit until a real
+`stop` event (or after a long idle/pause window).
+
+### Adding more players
+
+The `rest_command` is generic — create another automation from the same
+blueprint for each additional `media_player`; no extra configuration needed.
+
 ## Architecture
 
 ```

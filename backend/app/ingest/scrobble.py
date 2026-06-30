@@ -27,6 +27,7 @@ _PLEX_EVENTS = {
 }
 _STATE_BY_EVENT = {
     "play": "playing", "resume": "playing", "scrobble": "playing",
+    "update": "playing",   # periodic real-time progress tick (no reset/re-commit)
     "pause": "paused", "stop": "stopped",
 }
 DEFAULT_THRESHOLD = 90
@@ -36,7 +37,7 @@ DEFAULT_THRESHOLD = 90
 class ScrobbleEvent:
     """One push from a player, normalized across Plex / HA / AppleTV."""
     source: str                          # 'plex'|'homeassistant'|'appletv'|'generic'
-    event: str                           # 'play'|'pause'|'resume'|'stop'|'scrobble'
+    event: str                           # 'play'|'pause'|'resume'|'stop'|'scrobble'|'update'
     raw_title: str
     dedup_key: str
     account_label: str = ""
@@ -139,6 +140,10 @@ def parse_generic_payload(body: dict) -> Optional[ScrobbleEvent]:
     Shape: {event, source?, account?, platform?, title, kind?, year?, season?,
     episode?, episode_name?, tmdb_id?, progress_percent?, position_seconds?,
     duration_seconds?, dedup_key?}
+
+    Accepted events: 'play', 'resume', 'pause', 'stop', 'scrobble', 'update'.
+    'update' is a periodic real-time progress tick that refreshes the now-playing
+    session without resetting it (unlike 'play'/'resume').
     """
     title = (body.get("title") or "").strip()
     if not title:
@@ -270,6 +275,10 @@ def handle_scrobble(household_id: str, evt: ScrobbleEvent, token_user_id: str,
     commit = should_commit(evt, threshold)
     committed = False
     with connection() as conn, conn.cursor() as cur:
+        # Fail fast instead of hanging forever if this path ever contends on a
+        # row/index lock (defense-in-depth; the structural fix is threading the
+        # cursor into ingest_events below so the whole commit is one transaction).
+        cur.execute("SET LOCAL lock_timeout = '5s'")
         provider_id = _resolve_provider_id(cur, evt)
         user_id = _resolve_profile_id(cur, household_id, evt, token_user_id)
         # A fresh `play`/`resume` *below the threshold* starts a new session; a
@@ -287,6 +296,8 @@ def handle_scrobble(household_id: str, evt: ScrobbleEvent, token_user_id: str,
             "  position_seconds = EXCLUDED.position_seconds, duration_seconds = EXCLUDED.duration_seconds, "
             "  state = EXCLUDED.state, year = COALESCE(EXCLUDED.year, scrobble_sessions.year), "
             "  tmdb_id = COALESCE(EXCLUDED.tmdb_id, scrobble_sessions.tmdb_id), "
+            "  kind = EXCLUDED.kind, season = EXCLUDED.season, "
+            "  episode = EXCLUDED.episode, episode_name = EXCLUDED.episode_name, "
             "  updated_at = now(), "
             "  committed_at = CASE WHEN %s THEN NULL ELSE scrobble_sessions.committed_at END "
             "RETURNING id, committed_at",
@@ -322,10 +333,21 @@ def handle_scrobble(household_id: str, evt: ScrobbleEvent, token_user_id: str,
                 completed=True, tmdb_id=evt.tmdb_id,
                 raw={"source": evt.source, "scrobble": True},
             )
-            ingest_events(str(user_id), str(provider_id), None, [ne])
+            # Commit on the SAME open cursor/transaction. Opening a second pooled
+            # connection here would block forever: this transaction may hold an
+            # uncommitted INSERT on the titles unique index (a first-seen title),
+            # and a second connection re-resolving that title would wait on the
+            # lock while this one waits in Python for it to return — a self-deadlock
+            # invisible to Postgres's detector.
+            ingest_events(str(user_id), str(provider_id), None, [ne], cur=cur)
+            # Mark committed but keep the live state: an `update`/`play`/`scrobble`
+            # tick maps to 'playing', so the now-playing card stays visible while
+            # playback continues past the threshold. The card only disappears when a
+            # real `stop` event flips state to 'stopped'. The already_committed guard
+            # ensures later ticks see committed_at and do NOT re-ingest.
             cur.execute(
-                "UPDATE scrobble_sessions SET committed_at = now(), state = 'stopped' "
-                "WHERE id = %s", (session_id,))
+                "UPDATE scrobble_sessions SET committed_at = now() WHERE id = %s",
+                (session_id,))
             committed = True
 
     return {
@@ -345,9 +367,14 @@ def expire_stale_sessions(idle_minutes: int = 30,
     committed = 0
     expired = 0
     with connection() as conn, conn.cursor() as cur:
+        # Committed-but-still-playing sessions now keep state='playing' (so the card
+        # stays visible). Include them here: if their ticks silently stop (no stop
+        # event ever arrives, e.g. TV unplugged) they must still be retired from
+        # now-playing. The commit branch is guarded on committed_at IS NULL so an
+        # already-committed stale session is only marked stopped (no second ingest).
         cur.execute(
             "SELECT * FROM scrobble_sessions "
-            "WHERE committed_at IS NULL AND state <> 'stopped' "
+            "WHERE state <> 'stopped' "
             "AND updated_at < now() - (%s || ' minutes')::interval",
             (str(idle_minutes),),
         )
@@ -355,7 +382,8 @@ def expire_stale_sessions(idle_minutes: int = 30,
         for s in stale:
             expired += 1
             progress = float(s["progress_percent"] or 0)
-            if progress >= threshold and s["user_id"] and s["provider_id"]:
+            if (s["committed_at"] is None and progress >= threshold
+                    and s["user_id"] and s["provider_id"]):
                 ne = NormalizedEvent(
                     raw_title=s["episode_name"] or s["raw_title"],
                     clean_title=s["raw_title"],
@@ -367,7 +395,9 @@ def expire_stale_sessions(idle_minutes: int = 30,
                     progress_percent=progress, completed=True,
                     tmdb_id=s["tmdb_id"], raw={"source": s["source"], "scrobble": True},
                 )
-                ingest_events(str(s["user_id"]), str(s["provider_id"]), None, [ne])
+                # Same-transaction commit (see handle_scrobble): a first-seen title
+                # committed during expiry must not re-resolve on a second connection.
+                ingest_events(str(s["user_id"]), str(s["provider_id"]), None, [ne], cur=cur)
                 cur.execute("UPDATE scrobble_sessions SET committed_at = now(), "
                             "state = 'stopped' WHERE id = %s", (s["id"],))
                 committed += 1
