@@ -115,6 +115,9 @@ def apply_title_details(cur, title_id: str, details: dict, source: str) -> None:
     """Merge a provider's title details into the central model (fill-empty for
     scalars, merge for the overview map, additive for genres/cast/crew)."""
     overviews = {k: v for k, v in (details.get("overviews") or {}).items() if v}
+    meta_update = {"updated_by": source}
+    if details.get("networks"):
+        meta_update["networks"] = details["networks"]
     cur.execute(
         "UPDATE titles SET "
         "  original_title  = COALESCE(original_title, %s), "
@@ -136,7 +139,7 @@ def apply_title_details(cur, title_id: str, details: dict, source: str) -> None:
          details.get("runtime_minutes"), details.get("poster_path"),
          details.get("backdrop_path"), details.get("tmdb_id"),
          details.get("imdb_id"), _json(details.get("external_ids")),
-         _json({"updated_by": source}), bool(details.get("authoritative")),
+         _json(meta_update), bool(details.get("authoritative")),
          title_id),
     )
     for fld in ("overview", "year", "runtime_minutes", "poster_path"):

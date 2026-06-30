@@ -252,6 +252,8 @@ const nl = {
   "title.traktSynced": "Trakt-sync: {n} nieuw toegevoegd",
   "title.traktNothing": "Trakt had niets nieuws voor deze titel",
   "title.watchHistory": "Kijkgeschiedenis",
+  "title.network": "Netwerk",
+  "provider.generic": "Overig",
   "title.noEvents": "Geen kijkgebeurtenissen voor dit profiel.",
   "title.episodes": "Afleveringen",
   "title.seasonN": "Seizoen {n}",

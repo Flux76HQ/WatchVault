@@ -201,8 +201,19 @@ def enrich_title(title_id: str) -> dict:
     with connection() as conn, conn.cursor() as cur:
         cur.execute("SELECT wv_recompute_agg_for_title(%s)", (title_id,))
 
+    # Network is now known (from TMDB) — move this title's Trakt watch events
+    # onto the real streaming service so the dashboard/stats attribute them
+    # correctly instead of to "Trakt".
+    reattributed = None
+    try:
+        from ..networks import reattribute_title_trakt_events
+        reattributed = reattribute_title_trakt_events(title_id)
+    except Exception:  # noqa: BLE001 — enrichment must not fail on re-attribution
+        reattributed = {"status": "error"}
+
     return {"status": "enriched", "source": source, "tmdb_id": details.get("tmdb_id"),
-            "people_queued": len(person_ids), "episodes": episodes}
+            "people_queued": len(person_ids), "episodes": episodes,
+            "reattributed": reattributed}
 
 
 def enrich_person(person_id: str) -> dict:

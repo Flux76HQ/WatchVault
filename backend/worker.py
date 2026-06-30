@@ -64,6 +64,9 @@ def _handle(job) -> dict:
         from app.ingest import ingest_title_from_trakt
         return ingest_title_from_trakt(
             payload["user_id"], payload["household_id"], payload["title_id"])
+    if kind == "reattribute_trakt_all":
+        from app.networks import reattribute_all_trakt
+        return reattribute_all_trakt()
     return {"status": "unknown_kind"}
 
 
@@ -99,6 +102,10 @@ def _run_sync(connection_id: str) -> dict:
     if conn["adapter"] != "trakt_api":
         enqueue_trakt_title_syncs(str(conn["household_id"]), str(owner["id"]),
                                   summary.get("series_title_ids"))
+    elif summary.get("inserted"):
+        # A bulk Trakt sync may have added events to already-enriched titles;
+        # re-attribute them to their real streaming service.
+        _enqueue_reattribute_trakt_all()
     execute("UPDATE source_connections SET cursor=%s, last_status=%s, last_sync_at=now() WHERE id=%s",
             (json.dumps(cursor), f"ok: +{summary.get('inserted', 0)}", connection_id))
     return summary
@@ -120,8 +127,23 @@ def _schedule_syncs():
         )
 
 
+def _enqueue_reattribute_trakt_all():
+    """Queue a one-shot backfill that moves existing Trakt events onto their real
+    streaming service, deduped against any pending/running copy."""
+    from app.db import execute
+    execute(
+        "INSERT INTO background_jobs (kind, payload) "
+        "SELECT 'reattribute_trakt_all', '{}'::jsonb WHERE NOT EXISTS ("
+        "  SELECT 1 FROM background_jobs WHERE kind='reattribute_trakt_all' "
+        "  AND status IN ('pending','running'))")
+
+
 def main():
     print("[worker] started", flush=True)
+    try:
+        _enqueue_reattribute_trakt_all()
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
     last_schedule = 0.0
     while True:
         try:

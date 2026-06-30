@@ -158,6 +158,12 @@ class Plugin:
         if kind == "series":
             result["number_of_seasons"] = data.get("number_of_seasons")
             result["number_of_episodes"] = data.get("number_of_episodes")
+            result["networks"] = [
+                {"id": n.get("id"), "name": n.get("name"),
+                 "logo_path": n.get("logo_path")}
+                for n in data.get("networks", [])
+                if n.get("name")
+            ]
             result["seasons"] = [
                 {"season_number": s.get("season_number"), "name": s.get("name"),
                  "overview": s.get("overview"), "poster_path": s.get("poster_path"),

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/app";
-import { useT, useGenre } from "../lib/i18n";
+import { useT, useGenre, providerLabel } from "../lib/i18n";
 import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { TrendArea, StackedBars, HBars } from "../components/charts";
@@ -65,9 +65,9 @@ function PlatformBreakdown({ scope }: { scope: string }) {
     }
     return {
       rows: Array.from(byPeriod.values()),
-      series: Array.from(platforms.entries()).map(([key, v]) => ({ key, name: v.name, color: v.color || "var(--accent)" })),
+      series: Array.from(platforms.entries()).map(([key, v]) => ({ key, name: providerLabel(t, key, v.name), color: v.color || "var(--accent)" })),
     };
-  }, [data, period]);
+  }, [data, period, t]);
 
   return (
     <Section title={t("overviews.perPlatform")}

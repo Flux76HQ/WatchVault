@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/app";
-import { useT } from "../lib/i18n";
+import { useT, providerLabel } from "../lib/i18n";
 import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Spark } from "../components/charts";
@@ -73,7 +73,7 @@ export function Dashboard() {
               const maxH = Math.max(...s.providers.map((x: any) => x.hours), 1);
               return (
                 <div key={p.key} className="row" style={{ gap: 12 }}>
-                  <span style={{ width: 92, fontWeight: 600, fontSize: "0.9rem" }}>{p.name}</span>
+                  <span style={{ width: 92, fontWeight: 600, fontSize: "0.9rem" }}>{providerLabel(t, p.key, p.name)}</span>
                   <div className="bar-track" style={{ flex: 1 }}>
                     <div className="bar-fill" style={{ width: `${(p.hours / maxH) * 100}%`, background: p.color || "var(--accent)" }} />
                   </div>

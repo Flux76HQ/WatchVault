@@ -129,7 +129,7 @@ def title_detail(title_id: str):
         "WHERE tp.title_id = %s AND tp.role='crew' ORDER BY tp.ord", (title_id,))
     events = query_all(
         f"SELECT we.watched_date, we.item_kind, we.season, we.episode, we.raw_title, "
-        f"  p.name AS platform, u.display_name AS who "
+        f"  p.name AS platform, p.key AS platform_key, u.display_name AS who "
         f"FROM watch_events we JOIN providers p ON p.id = we.provider_id "
         f"JOIN users u ON u.id = we.user_id "
         f"WHERE we.title_id = %s AND we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL "
@@ -161,6 +161,11 @@ def title_detail(title_id: str):
 
     overviews = t.get("overviews") or {}
     overview = overviews.get(lang) or t["overview"] or overviews.get("en")
+    networks = [
+        {"name": n.get("name"), "logo": poster_url(n.get("logo_path"), "w92")}
+        for n in ((t.get("metadata") or {}).get("networks") or [])
+        if n.get("name")
+    ]
     try:
         trakt_ok = trakt_configured(str(current_user()["household_id"]))
     except Exception:  # noqa: BLE001 — never break title detail over this hint
@@ -174,6 +179,7 @@ def title_detail(title_id: str):
         "external_ids": t["external_ids"],
         "trakt_configured": trakt_ok,
         "genres": [g["name"] for g in genres],
+        "networks": networks,
         "seasons": seasons,
         "watch_dates": watch_dates,
         "cast": [{"id": str(c["id"]), "name": c["name"], "character": c["character"],
@@ -183,7 +189,7 @@ def title_detail(title_id: str):
         "events": [
             {"date": e["watched_date"].isoformat(), "kind": e["item_kind"],
              "season": e["season"], "episode": e["episode"], "raw_title": e["raw_title"],
-             "platform": e["platform"], "who": e["who"]}
+             "platform": e["platform"], "platform_key": e["platform_key"], "who": e["who"]}
             for e in events
         ],
     })

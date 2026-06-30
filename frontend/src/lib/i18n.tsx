@@ -95,3 +95,12 @@ export function useGenre(): (name: string) => string {
   const { lang } = useT();
   return useCallback((name: string) => translateGenre(lang, name), [lang]);
 }
+
+// ── Provider localization ──────────────────────────────────────────────────
+// Provider names are stored non-localized (a single text column). Only the
+// generic "Other" provider — used for Trakt watches whose streaming service
+// isn't in the catalogue, and for movies — needs a localized label.
+export function providerLabel(t: TFn, key: string | undefined, name: string): string {
+  if (key === "generic") return t("provider.generic");
+  return name;
+}

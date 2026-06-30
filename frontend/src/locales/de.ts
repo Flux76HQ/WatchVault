@@ -252,6 +252,8 @@ const de = {
   "title.traktSynced": "Trakt-Sync: {n} neu hinzugefügt",
   "title.traktNothing": "Trakt hatte nichts Neues für diesen Titel",
   "title.watchHistory": "Wiedergabeverlauf",
+  "title.network": "Sender",
+  "provider.generic": "Sonstige",
   "title.noEvents": "Keine Wiedergabeereignisse für dieses Profil.",
   "title.episodes": "Folgen",
   "title.seasonN": "Staffel {n}",
