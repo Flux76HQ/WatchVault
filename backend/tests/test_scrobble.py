@@ -532,3 +532,35 @@ def test_expire_stale_already_committed_marks_stopped_without_reingest(monkeypat
                for sql, _ in cur.executed if "SELECT" in sql)
     # The session was retired via state='stopped', not re-committed.
     assert any("SET state = 'stopped'" in sql for sql, _ in cur.executed)
+
+
+def test_handle_scrobble_upsert_updates_attribution_on_later_tick(monkeypatch):
+    # Corrected attribution must propagate to scrobble_sessions on later ticks:
+    # a session first seen as a movie that later reports kind='series' (same
+    # dedup_key) must have kind/season/episode/episode_name overwritten so the
+    # now-playing card stops showing stale attribution.
+    cur = SmartCursor()
+    monkeypatch.setattr(_scrobble, "connection", _fake_conn(cur))
+    monkeypatch.setattr(
+        _scrobble, "ingest_events",
+        lambda *a, **k: {"inserted": 1, "duplicates": 0, "titles_created": 0,
+                         "titles_touched": 1, "series_title_ids": []})
+
+    first = parse_generic_payload({"title": "Loki", "event": "play",
+                                   "position_seconds": 10, "duration_seconds": 100})
+    _scrobble.handle_scrobble("hh-1", first, "token-user")
+
+    second = parse_generic_payload({"title": "Loki", "event": "update",
+                                    "kind": "series", "season": 1, "episode": 3,
+                                    "episode_name": "Lamentis",
+                                    "position_seconds": 20, "duration_seconds": 100})
+    _scrobble.handle_scrobble("hh-1", second, "token-user")
+
+    upserts = [_norm(s) for s in cur.executed if "INSERT INTO scrobble_sessions" in _norm(s)]
+    assert upserts, "expected a scrobble_sessions UPSERT"
+    upsert = upserts[-1]
+    # The DO UPDATE SET overwrites the live attribution columns (not COALESCE'd).
+    assert "kind = EXCLUDED.kind" in upsert
+    assert "season = EXCLUDED.season" in upsert
+    assert "episode = EXCLUDED.episode" in upsert
+    assert "episode_name = EXCLUDED.episode_name" in upsert
