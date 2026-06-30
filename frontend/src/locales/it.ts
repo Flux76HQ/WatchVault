@@ -43,6 +43,20 @@ const it = {
   "install.action": "Installa",
   "install.dismiss": "Ignora",
 
+  // ── Aggiungi un film al cinema ───────────────────────────────────────────
+  "cinema.add": "Aggiungi un film al cinema",
+  "cinema.addHint": "Aggiungi manualmente un film visto al cinema",
+  "cinema.dialogTitle": "Aggiungi un film al cinema",
+  "cinema.searchPlaceholder": "Cerca un film…",
+  "cinema.searching": "Ricerca…",
+  "cinema.noResults": "Nessun film trovato",
+  "cinema.searchHint": "Digita il titolo di un film per cercarlo.",
+  "cinema.platform": "Piattaforma",
+  "cinema.watchedOn": "Visto il",
+  "cinema.adding": "Aggiunta…",
+  "cinema.added": "«{title}» aggiunto",
+  "cinema.failed": "Impossibile aggiungere il film",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "dashboard.welcome": "Benvenuto, {name} 👋",
   "dashboard.noHistory": "Non c'è ancora cronologia di visione. Importa un CSV di Netflix o collega Plex/Jellyfin per iniziare a costruire il vault della tua famiglia.",

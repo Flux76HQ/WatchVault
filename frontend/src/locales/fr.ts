@@ -43,6 +43,20 @@ const fr = {
   "install.action": "Installer",
   "install.dismiss": "Ignorer",
 
+  // ── Ajouter un film au cinéma ────────────────────────────────────────────
+  "cinema.add": "Ajouter un film au cinéma",
+  "cinema.addHint": "Ajouter manuellement un film vu au cinéma",
+  "cinema.dialogTitle": "Ajouter un film au cinéma",
+  "cinema.searchPlaceholder": "Rechercher un film…",
+  "cinema.searching": "Recherche…",
+  "cinema.noResults": "Aucun film trouvé",
+  "cinema.searchHint": "Saisissez un titre de film pour le rechercher.",
+  "cinema.platform": "Plateforme",
+  "cinema.watchedOn": "Vu le",
+  "cinema.adding": "Ajout…",
+  "cinema.added": "« {title} » ajouté",
+  "cinema.failed": "Impossible d'ajouter le film",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "dashboard.welcome": "Bienvenue, {name} 👋",
   "dashboard.noHistory": "Aucun historique de visionnage pour le moment. Importez un CSV Netflix ou connectez Plex/Jellyfin pour commencer à remplir le coffre de votre foyer.",

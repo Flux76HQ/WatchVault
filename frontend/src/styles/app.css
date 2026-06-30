@@ -532,3 +532,44 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ── Add cinema film dialog ─────────────────────────────────────────────── */
+.cinema-scrim {
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0,0,0,0.45);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 6vh 16px 16px;
+  overflow-y: auto;
+}
+.cinema-dialog {
+  width: 100%; max-width: 460px;
+  max-height: 86vh; display: flex; flex-direction: column;
+}
+.cinema-results {
+  display: flex; flex-direction: column; gap: 6px;
+  overflow-y: auto; max-height: 52vh; margin: 0 -6px; padding: 0 6px;
+}
+.cinema-hit {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  width: 100%; padding: 8px; min-height: 0;
+  background: transparent; color: var(--text);
+  border: 1px solid transparent; border-radius: var(--radius);
+  font-weight: 500;
+}
+.cinema-hit:hover { background: var(--accent-subtle); }
+.cinema-hit.selected { border-color: var(--hairline); background: var(--bg-elev); }
+.cinema-hit-poster {
+  flex: 0 0 auto; width: 46px; aspect-ratio: 2 / 3;
+  border-radius: 8px; overflow: hidden; background: var(--bg-elev);
+  border: 1px solid var(--hairline);
+}
+.cinema-hit-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cinema-hit-poster .ph {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+  background: linear-gradient(135deg, var(--accent-subtle), transparent);
+}
+.cinema-hit-meta { min-width: 0; }
+.cinema-hit-meta .t { font-weight: 650; line-height: 1.25; }
+.cinema-hit-meta .s { font-size: 0.8rem; }

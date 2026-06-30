@@ -7,6 +7,7 @@ import { Spark } from "../components/charts";
 import { Loading, ErrorState, Empty, Stat, Poster, Section } from "../components/ui";
 import { fmtHours, fmtNum, monthKey, monthLabel } from "../lib/format";
 import { IconChart, IconImport } from "../components/icons";
+import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
 
 export function Dashboard() {
   const { scope, user } = useApp();
@@ -43,6 +44,8 @@ export function Dashboard() {
           <h1 className="large-title">{t("nav.dashboard")}</h1>
           <span className="muted">{t("dashboard.overviewFor", { scope: scopeName })}</span>
         </div>
+        <div className="spacer" style={{ flex: 1 }} />
+        <AddCinemaFilmButton variant="ghost" />
       </div>
 
       <div className="stat-grid" style={{ marginBottom: 24 }}>

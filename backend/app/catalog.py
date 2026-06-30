@@ -189,6 +189,28 @@ def dedupe_title_by_tmdb(cur, kind: str, tmdb_id, current_title_id: str) -> str:
     return canonical
 
 
+def get_or_create_movie_by_tmdb(cur, tmdb_id, title: str, year: int | None = None) -> str:
+    """Resolve a movie title by its TMDB id, creating a minimal row when absent.
+
+    Used by the manual "add a cinema film" flow: the user picked an exact TMDB
+    result, so we bind the title to that ``tmdb_id`` up front. Enrichment then
+    fetches the full metadata for that exact record (no fuzzy search). The
+    partial UNIQUE index on ``(kind, tmdb_id)`` guarantees one movie per tmdb_id,
+    so a later sync of the same film reuses this row instead of duplicating it.
+    """
+    cur.execute("SELECT id FROM titles WHERE kind = 'movie' AND tmdb_id = %s",
+                (tmdb_id,))
+    row = cur.fetchone()
+    if row:
+        return str(row["id"])
+    norm = normalize_text(title or "") or f"tmdb:{tmdb_id}"
+    cur.execute(
+        "INSERT INTO titles (kind, title, year, tmdb_id, normalized_key) "
+        "VALUES ('movie', %s, %s, %s, %s) RETURNING id",
+        ((title or "").strip() or f"TMDB {tmdb_id}", year, tmdb_id, norm))
+    return str(cur.fetchone()["id"])
+
+
 def upsert_episode(cur, title_id: str, ep: dict) -> None:
     """Fill/refresh one episode's metadata (fill-empty for scalars). Season/episode
     numbers are required; rows created during ingest (name only) get enriched here."""

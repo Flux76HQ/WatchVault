@@ -6,6 +6,7 @@ import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { addPasskey } from "../lib/auth";
 import { Section } from "../components/ui";
+import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
 import { ACCENTS, fmtDate } from "../lib/format";
 
 function Appearance() {
@@ -349,12 +350,27 @@ function DangerZone() {
   );
 }
 
+function ExpertTools() {
+  const { t } = useT();
+  const { prefs, can } = useApp();
+  if (!can("ingest.write") || !prefs.expert) return null;
+  return (
+    <Section title={t("cinema.add")}>
+      <div className="row" style={{ gap: 12, alignItems: "center" }}>
+        <span className="caption" style={{ flex: 1 }}>{t("cinema.addHint")}</span>
+        <AddCinemaFilmButton variant="block" />
+      </div>
+    </Section>
+  );
+}
+
 export function Settings() {
   const { t } = useT();
   return (
     <>
       <h1 className="large-title" style={{ marginBottom: 8 }}>{t("settings.title")}</h1>
       <Appearance />
+      <ExpertTools />
       <Household />
       <Plugins />
       <Tokens />

@@ -43,6 +43,20 @@ const de = {
   "install.action": "Installieren",
   "install.dismiss": "Schließen",
 
+  // ── Kinofilm hinzufügen ──────────────────────────────────────────────────
+  "cinema.add": "Kinofilm hinzufügen",
+  "cinema.addHint": "Einen im Kino gesehenen Film manuell hinzufügen",
+  "cinema.dialogTitle": "Kinofilm hinzufügen",
+  "cinema.searchPlaceholder": "Nach einem Film suchen…",
+  "cinema.searching": "Suche…",
+  "cinema.noResults": "Keine Filme gefunden",
+  "cinema.searchHint": "Gib einen Filmtitel ein, um zu suchen.",
+  "cinema.platform": "Plattform",
+  "cinema.watchedOn": "Gesehen am",
+  "cinema.adding": "Wird hinzugefügt…",
+  "cinema.added": "„{title}“ hinzugefügt",
+  "cinema.failed": "Film konnte nicht hinzugefügt werden",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "dashboard.welcome": "Willkommen, {name} 👋",
   "dashboard.noHistory": "Noch kein Wiedergabeverlauf. Importiere eine Netflix-CSV oder verbinde Plex/Jellyfin, um den Tresor deines Haushalts aufzubauen.",

@@ -43,6 +43,20 @@ const es = {
   "install.action": "Instalar",
   "install.dismiss": "Descartar",
 
+  // ── Añadir película de cine ──────────────────────────────────────────────
+  "cinema.add": "Añadir película de cine",
+  "cinema.addHint": "Añade manualmente una película que viste en el cine",
+  "cinema.dialogTitle": "Añadir película de cine",
+  "cinema.searchPlaceholder": "Buscar una película…",
+  "cinema.searching": "Buscando…",
+  "cinema.noResults": "No se encontraron películas",
+  "cinema.searchHint": "Escribe el título de una película para buscarla.",
+  "cinema.platform": "Plataforma",
+  "cinema.watchedOn": "Visto el",
+  "cinema.adding": "Añadiendo…",
+  "cinema.added": "«{title}» añadida",
+  "cinema.failed": "No se pudo añadir la película",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "dashboard.welcome": "Bienvenido, {name} 👋",
   "dashboard.noHistory": "Aún no hay historial de visualización. Importa un CSV de Netflix o conecta Plex/Jellyfin para empezar a crear el baúl de tu hogar.",

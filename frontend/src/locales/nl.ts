@@ -43,6 +43,20 @@ const nl = {
   "install.action": "Installeren",
   "install.dismiss": "Sluiten",
 
+  // ── Bioscoopfilm toevoegen ───────────────────────────────────────────────
+  "cinema.add": "Bioscoopfilm toevoegen",
+  "cinema.addHint": "Voeg handmatig een film toe die je in de bioscoop zag",
+  "cinema.dialogTitle": "Bioscoopfilm toevoegen",
+  "cinema.searchPlaceholder": "Zoek een film…",
+  "cinema.searching": "Zoeken…",
+  "cinema.noResults": "Geen films gevonden",
+  "cinema.searchHint": "Typ een filmtitel om te zoeken.",
+  "cinema.platform": "Platform",
+  "cinema.watchedOn": "Bekeken op",
+  "cinema.adding": "Toevoegen…",
+  "cinema.added": "“{title}” toegevoegd",
+  "cinema.failed": "Kon de film niet toevoegen",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "dashboard.welcome": "Welkom, {name} 👋",
   "dashboard.noHistory": "Nog geen kijkgeschiedenis. Importeer een Netflix-CSV of koppel Plex/Jellyfin om de kluis van je huishouden op te bouwen.",

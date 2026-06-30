@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import { Loading, Empty, Poster, ErrorState } from "../components/ui";
 import { IconSearch } from "../components/icons";
 import { fmtHours, fmtDate } from "../lib/format";
+import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
 
 interface Provider { key: string; name: string; }
 
@@ -125,7 +126,11 @@ export function Search() {
 
   return (
     <>
-      <h1 className="large-title" style={{ marginBottom: 16 }}>{t("search.title")}</h1>
+      <div className="row" style={{ marginBottom: 16, gap: 12 }}>
+        <h1 className="large-title" style={{ margin: 0 }}>{t("search.title")}</h1>
+        <div className="spacer" style={{ flex: 1 }} />
+        <AddCinemaFilmButton />
+      </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="row" style={{ gap: 10, marginBottom: 14 }}>

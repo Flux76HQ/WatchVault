@@ -43,6 +43,20 @@ const en = {
   "install.action": "Install",
   "install.dismiss": "Dismiss",
 
+  // ── Add cinema film ──────────────────────────────────────────────────────
+  "cinema.add": "Add cinema film",
+  "cinema.addHint": "Manually add a film you saw in the cinema",
+  "cinema.dialogTitle": "Add a cinema film",
+  "cinema.searchPlaceholder": "Search for a film…",
+  "cinema.searching": "Searching…",
+  "cinema.noResults": "No films found",
+  "cinema.searchHint": "Type a film title to look it up.",
+  "cinema.platform": "Platform",
+  "cinema.watchedOn": "Watched on",
+  "cinema.adding": "Adding…",
+  "cinema.added": "Added “{title}”",
+  "cinema.failed": "Could not add the film",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "dashboard.welcome": "Welcome, {name} 👋",
   "dashboard.noHistory": "No watch history yet. Import a Netflix CSV or connect Plex/Jellyfin to start building your household's vault.",
