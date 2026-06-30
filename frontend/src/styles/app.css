@@ -553,7 +553,7 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 .cinema-hit {
   display: flex; align-items: center; gap: 12px; text-align: left;
   justify-content: flex-start;
-  width: 100%; padding: 8px; min-height: 0;
+  width: 100%; padding: 8px; min-height: 0; flex: 0 0 auto;
   background: transparent; color: var(--text);
   border: 1px solid transparent; border-radius: var(--radius);
   font-weight: 500;
