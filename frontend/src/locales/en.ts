@@ -276,7 +276,11 @@ const en = {
   "settings.resetDone": "Database reset · {events} events, {titles} titles and {people} people removed",
 
   // ── Attribution log ─────────────────────────────────────────────────────
-  "attrib.title": "Attribution log",
+  "attrib.title": "Import Log",
+  "attrib.selectAll": "Select all",
+  "attrib.selectedCount": "{n} selected",
+  "attrib.assign": "Assign",
+  "attrib.bulkDone": "{n} updated",
   "attrib.help": "Why Trakt and manual titles land on a streaming service or on \"Other\". Movies have no TMDB networks, so they always fall back to \"Other\".",
   "attrib.filterAll": "All",
   "attrib.filterOther": "Only Other",

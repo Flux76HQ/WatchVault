@@ -276,7 +276,11 @@ const nl = {
   "settings.resetDone": "Database gewist · {events} events, {titles} titels en {people} personen verwijderd",
 
   // ── Attribution log ─────────────────────────────────────────────────────
-  "attrib.title": "Attributielog",
+  "attrib.title": "Import Log",
+  "attrib.selectAll": "Alles selecteren",
+  "attrib.selectedCount": "{n} geselecteerd",
+  "attrib.assign": "Toewijzen",
+  "attrib.bulkDone": "{n} bijgewerkt",
   "attrib.help": "Waarom Trakt- en handmatige titels op een streamingdienst of op \"Overig\" belanden. Films hebben geen TMDB-netwerken, dus die vallen altijd terug op \"Overig\".",
   "attrib.filterAll": "Alles",
   "attrib.filterOther": "Alleen Overig",

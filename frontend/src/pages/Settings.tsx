@@ -6,6 +6,7 @@ import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { addPasskey } from "../lib/auth";
 import { Section } from "../components/ui";
+import { IconFilm, IconTv } from "../components/icons";
 import { ACCENTS, fmtDate } from "../lib/format";
 
 function Appearance() {
@@ -215,7 +216,10 @@ function AttributionLog() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [history, setHistory] = useState<Record<string, any[]>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [bulkProvider, setBulkProvider] = useState("");
   const log = useFetch<any>(() => api.get("/attribution-log", { filter }), [filter]);
+  const provs = useFetch<any[]>(() => api.get("/providers"), []);
   if (!can("ingest.write") || !prefs.expert) return null;
 
   async function toggleHistory(titleId: string) {
@@ -248,6 +252,45 @@ function AttributionLog() {
   }
 
   const items: any[] = log.data?.items || [];
+
+  function toggleSelect(id: string) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function toggleSelectAll() {
+    setSelected((s) => {
+      const allSelected = items.length > 0 && items.every((it) => s.has(it.title_id));
+      return allSelected ? new Set() : new Set(items.map((it) => it.title_id));
+    });
+  }
+
+  // Fold Plex + Jellyfin into one "Digital Library" option for the bulk picker.
+  const provOptions: any[] = [];
+  let digitalSeen = false;
+  for (const p of provs.data || []) {
+    if (p.key === "plex" || p.key === "jellyfin") {
+      if (digitalSeen) continue;
+      digitalSeen = true;
+      provOptions.push({ ...p, key: "digital_library" });
+    } else provOptions.push(p);
+  }
+
+  async function bulkApply() {
+    if (selected.size === 0) return;
+    setBusy("__bulk__");
+    try {
+      const res = await api.post("/attribution-log/bulk-platform", {
+        title_ids: [...selected], provider_id: bulkProvider || null,
+      });
+      toast(t("attrib.bulkDone", { n: res.updated ?? selected.size }));
+      setSelected(new Set());
+      setBulkProvider("");
+      log.reload();
+    } catch (e) { toast(e instanceof ApiError ? e.message : t("settings.failed"), "err"); }
+    finally { setBusy(null); }
+  }
+
+  const allSelected = items.length > 0 && items.every((it) => selected.has(it.title_id));
+
   return (
     <Section title={t("attrib.title")}
       right={<button className="btn-ghost btn-sm" onClick={() => setOpen((o) => !o)}>
@@ -264,11 +307,42 @@ function AttributionLog() {
           {log.data && <span className="caption">{t("attrib.summary", { other: log.data.other, total: log.data.total })}</span>}
           <button className="btn-ghost btn-sm" style={{ flexShrink: 0 }} disabled={busy === "__all__"} onClick={reattributeAll}>{t("attrib.reattributeAll")}</button>
         </div>
+
+        {selected.size > 0 && (
+          <div className="row wrap" style={{ gap: 10, alignItems: "center", padding: "10px 12px", background: "var(--accent-subtle)", borderRadius: 10 }}>
+            <strong style={{ fontSize: "0.9rem" }}>{t("attrib.selectedCount", { n: selected.size })}</strong>
+            <div className="spacer" style={{ flex: 1 }} />
+            <select value={bulkProvider} onChange={(e) => setBulkProvider(e.target.value)} style={{ minHeight: 34, padding: "4px 8px" }}>
+              <option value="">{t("title.platformAuto")}</option>
+              {provOptions.map((p) => (
+                <option key={p.id} value={p.id}>{providerLabel(t, p.key, p.name)}</option>
+              ))}
+            </select>
+            <button className="btn btn-primary btn-sm" style={{ flexShrink: 0 }} disabled={busy === "__bulk__"} onClick={bulkApply}>{t("attrib.assign")}</button>
+            <button className="btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => setSelected(new Set())}>{t("common.cancel")}</button>
+          </div>
+        )}
+
+        {items.length > 0 && (
+          <label className="row" style={{ gap: 8, alignItems: "center", cursor: "pointer" }}>
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
+              style={{ width: 18, height: 18 }} />
+            <span className="caption">{t("attrib.selectAll")}</span>
+          </label>
+        )}
+
         <div className="col" style={{ gap: 0 }}>
           {items.map((it) => (
             <div key={it.title_id} className="col" style={{ gap: 0 }}>
-              <div className="list-row" style={{ flexWrap: "wrap" }}>
-                <div className="col" style={{ flex: 1, gap: 2, minWidth: 200 }}>
+              <div className="list-row" style={{ flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+                <input type="checkbox" checked={selected.has(it.title_id)} onChange={() => toggleSelect(it.title_id)}
+                  style={{ width: 18, height: 18, flexShrink: 0 }} />
+                <Link to={`/title/${it.title_id}`} className="imp-thumb">
+                  {it.poster
+                    ? <img src={it.poster} alt="" loading="lazy" />
+                    : <div className="imp-thumb-ph">{it.kind === "movie" ? <IconFilm width={18} height={18} /> : <IconTv width={18} height={18} />}</div>}
+                </Link>
+                <div className="col" style={{ flex: 1, gap: 2, minWidth: 160 }}>
                   <Link to={`/title/${it.title_id}`} style={{ fontWeight: 600 }}>{it.title}</Link>
                   <span className="caption">
                     {it.kind === "movie" ? t("common.film") : t("common.series")} · {t(`attrib.reason.${it.reason}`)}
