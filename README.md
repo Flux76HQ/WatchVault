@@ -8,6 +8,16 @@ household — Netflix, Plex, Jellyfin, HBO Max, SkyShowtime, Videoland and more.
 Each family member has their own passwordless profile; history is tracked per profile
 and can be viewed combined at the household level.
 
+Because most streaming services have **no public history API**, WatchVault is built
+around a pluggable ingestion layer: file importers (Netflix, generic CSV/JSON), official
+API syncs (Plex, Jellyfin, Trakt) and **live scrobbling** (Plex / Home Assistant / AppleTV)
+all normalize into one central model. The result is a single, private, beautiful dashboard
+for *everything* the household watches — across every app and device.
+
+> **TL;DR** — `cp .env.example .env`, edit a few secrets, `docker compose up -d`,
+> open `http://<host>:7210`, register (first user becomes admin). See
+> [Quick start (Docker)](#quick-start-docker).
+
 Built to the [zbonline Technical Framework](https://wiki.zbonline.nl/nl/Projecten/Coding/technical-framework):
 passwordless passkeys, a plugin runtime, an offline-sync spine, an MCP server, and a
 single-container deployment (nginx + Gunicorn + worker + Postgres).
@@ -24,6 +34,11 @@ single-container deployment (nginx + Gunicorn + worker + Postgres).
   - **Netflix** — official "Viewing activity → Download all" CSV importer.
   - **Plex / Jellyfin / Trakt** — direct API sync (watch history), on-demand.
   - **Generic CSV/JSON** — for HBO Max, SkyShowtime, Videoland, Disney+, Prime…
+- **Live scrobbling / Now Playing** — push real-time playback into WatchVault so streaming
+  apps that have no history export still get tracked. A native **Plex webhook** and a
+  generic JSON endpoint (for **Home Assistant**, **AppleTV** shortcuts, etc.) feed a
+  **Now Playing** card on the dashboard and auto-commit a watch event once you've watched
+  enough. Incoming account names are mapped to household profiles. (Expert Mode.)
 - **Central, normalized model** — titles (with seasons/episodes), genres, cast/crew,
   watch events, providers. Titles carry an optional `external_ids` field so a title can
   later be cross-linked to other VaultStack systems (DiscVault/MovieVault) — no hard
@@ -45,6 +60,13 @@ single-container deployment (nginx + Gunicorn + worker + Postgres).
 - **Modern, responsive UI** — poster grids, charts (line/stacked-bar/horizontal-bar),
   a calendar heatmap, glass materials, Light/Dark/System themes and a personalizable
   accent color. Works on desktop and mobile (installable PWA, offline-capable shell).
+- **Expert Mode** — an opt-in toggle (Settings → Appearance) that reveals advanced,
+  technical features: live scrobbling, the import/attribution log and re-attribution
+  tools, and long-press to delete a title from the database. Off by default keeps the
+  everyday UI clean.
+- **Little touches** — add a one-off **cinema visit** straight from the dashboard/search,
+  pick a **default profile** that loads on open, a flag-based language picker, and a
+  native-feeling PWA (no pinch-zoom, no long-press text callouts).
 
 ## The mandatory overviews
 
@@ -99,30 +121,113 @@ sample-data/    example Netflix CSV + generic CSV/JSON exports
 
 ## Quick start (Docker)
 
-Deploy on your server (Unraid, etc.) with just `docker-compose.yml` + `.env` — the
-prebuilt image is pulled from GHCR, no source checkout needed:
+WatchVault ships as a **single application image** (nginx + Gunicorn + worker + MCP in one
+container) plus a **Postgres** container. The default `docker-compose.yml` pulls the
+prebuilt image from GHCR, so you don't need a source checkout on the host.
+
+### Prerequisites
+
+- **Docker Engine 24+** with the **Compose v2** plugin (`docker compose …`).
+- A host to run it on — Unraid, Synology, a NAS, a Raspberry Pi or any Linux box.
+- ~1 GB free disk to start (grows with history + cached posters).
+- For real passkeys outside `localhost`: a hostname and HTTPS (see
+  [Passkeys & hostnames](#passkeys--hostnames)).
+
+### 1. Get the files
+
+You only need three files next to each other: `docker-compose.yml`, `.env`, and — if you
+want to build from source — `docker-compose.build.yml`. Either clone the repo or just grab
+`docker-compose.yml` and `.env.example`:
 
 ```bash
+git clone https://github.com/helmerzNL/WatchVault.git
+cd WatchVault
 cp .env.example .env
-# edit .env — at minimum set SESSION_SECRET and POSTGRES_PASSWORD,
-# and RP_ID / RP_ORIGINS to your hostname (see "Passkeys & hostnames" below)
+```
 
+### 2. Configure `.env`
+
+Open `.env` and set at least the secrets. The most important variables:
+
+| Variable | What it does | Set it to |
+|---|---|---|
+| `SESSION_SECRET` | Signs login sessions | A long random string (e.g. `openssl rand -hex 32`) |
+| `POSTGRES_PASSWORD` | Database password | A strong password |
+| `RP_ID` | WebAuthn relying-party ID | Your hostname (`localhost` for local testing) |
+| `RP_ORIGINS` | Allowed passkey origin(s) | Full origin, e.g. `https://watchvault.example.com` |
+| `WEB_PORT` | Public port published on the host | `7210` (change if taken) |
+| `DATA_PATH` | Host folder for persistent data | `./data` or an absolute path |
+| `REGISTRATION_INVITE_CODE` | Optional gate for sign-ups | Leave empty to allow open registration |
+| `TMDB_API_KEY` | Optional poster/genre/cast enrichment | A free TMDB key (or set it later in the UI) |
+
+Everything else has sane defaults. The internal ports (`API_PORT`, `MCP_PORT`) never need
+to be exposed.
+
+### 3. Start it
+
+```bash
 docker compose up -d
 ```
 
-Open **http://localhost:7210**. The **first** person to register creates the household
-and becomes the admin. Save the recovery codes shown on sign-up.
+Open **http://&lt;host&gt;:7210**. The **first** person to register creates the household and
+becomes the admin — **save the recovery codes** shown on sign-up (they're the only way back
+in if you lose every passkey). Add the other family members from **Settings → Household**.
 
-Optionally set `TMDB_API_KEY` in `.env` (or later in **Settings → Plugins**) to enrich
-titles with posters, genres and cast.
+Optionally set `TMDB_API_KEY` now or later in **Settings → Plugins** to enrich titles with
+posters, genres and cast.
 
 ### Build from source instead
 
-If you have the repo checked out and want to build the image locally:
+If you have the repo checked out and want to build the image locally instead of pulling
+from GHCR:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
+
+### Updating
+
+```bash
+docker compose pull        # fetch the latest published image
+docker compose up -d       # recreate the app container
+```
+
+Database **migrations apply automatically on boot** — there's no manual migration step.
+Your data lives in `DATA_PATH` on the host, so pulling a new image never touches it.
+
+### Data & backups
+
+Everything persistent is stored under `DATA_PATH` (default `./data`):
+
+```
+data/
+  app/         uploaded import files & app data
+  postgres/    the PostgreSQL data directory (titles, history, metadata)
+```
+
+To back up, stop the stack (or use a DB dump) and copy the folder:
+
+```bash
+docker compose down
+tar czf watchvault-backup-$(date +%F).tar.gz data/
+docker compose up -d
+```
+
+For a hot, consistent database backup without downtime you can instead
+`docker compose exec db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > watchvault.sql`.
+
+### Reverse proxy & HTTPS
+
+Passkeys require a **secure context**, so anything other than `localhost` must be served
+over **HTTPS**. Put WatchVault behind your reverse proxy (Nginx Proxy Manager, Traefik,
+Caddy, …), forward the public hostname to the container's `WEB_PORT` (`7210`), and set:
+
+```
+RP_ID=watchvault.example.com
+RP_ORIGINS=https://watchvault.example.com
+```
+
+Only the one public port is published; `/api` and `/mcp` are served on that same origin.
 
 ### Ports
 
@@ -177,6 +282,27 @@ the *Generic CSV/JSON* provider. The generic adapter auto-detects common column 
 (`title`, `date`, `season`, `episode`, `duration`/`minutes`, `progress`, …).
 
 Sample files to try live in [`sample-data/`](sample-data/).
+
+### Live scrobbling (Now Playing)
+
+For services with no history export, push **real-time playback** into WatchVault. Enable
+**Expert Mode** (Settings → Appearance), then open the **Live scrobbling** section in
+Settings. Generate a webhook token there — it shows ready-to-copy **Plex** and **generic**
+URLs — and map incoming account names to household profiles. Playback shows up on the
+dashboard's **Now playing** card and is saved as a watch event once it passes the
+completion threshold.
+
+- **Plex** — paste the **Plex webhook URL** into Plex (Plex Pass → Settings → Webhooks):
+  `http://<host>:7210/api/scrobble/plex?token=wvapi_…`. Plex can't send an `Authorization`
+  header, so the token is carried in the `?token=` query parameter.
+- **Home Assistant / Apple TV / Shortcuts** — POST a small JSON payload (title, type,
+  progress, account) to the **generic endpoint**
+  `http://<host>:7210/api/scrobble/generic` with the shown `Authorization: Bearer wvapi_…`
+  header. Handy from a Home Assistant automation on a `media_player` state change, or an
+  Apple Shortcut.
+
+Because it's gated behind Expert Mode, the whole scrobbling UI stays hidden for everyday
+household members.
 
 ### Starting over
 
@@ -241,8 +367,8 @@ npm run build   # outputs dist/ (served by nginx in the container)
   calls are public TMDB title lookups for metadata; no personal watch data is sent.
 - **Extensible** — new services are new adapters; new metadata sources are new plugins.
 - **Performant** — overviews read precomputed daily aggregates, not raw events.
-- **Out of scope (for now):** recommendations, social/sharing features, and automatic
-  "what am I watching now" detection beyond the Plex/Jellyfin API sync.
+- **Out of scope (for now):** recommendations and social/sharing features (comparing with
+  other households, public profiles).
 
 ## License
 
