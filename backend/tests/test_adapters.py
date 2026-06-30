@@ -304,7 +304,30 @@ def test_jellyfin_library_scoped_queries(monkeypatch):
     assert {e.clean_title for e in events} == {"Movie libA", "Movie libB"}
 
 
-def test_trakt_exchange_pin_returns_tokens(monkeypatch):
+def test_trakt_request_device_code_returns_user_code(monkeypatch):
+    from app.ingest.adapters import trakt
+    captured = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        captured["url"] = url
+        captured["body"] = json
+        return _FakeResp(payload={
+            "device_code": "dev123", "user_code": "ABCD1234",
+            "verification_url": "https://trakt.tv/activate",
+            "expires_in": 600, "interval": 5,
+        })
+
+    monkeypatch.setattr(trakt.requests, "post", fake_post)
+    res = trakt.request_device_code("cid")
+    assert res["device_code"] == "dev123"
+    assert res["user_code"] == "ABCD1234"
+    assert res["verification_url"] == "https://trakt.tv/activate"
+    assert res["interval"] == 5
+    assert captured["url"].endswith("/oauth/device/code")
+    assert captured["body"] == {"client_id": "cid"}
+
+
+def test_trakt_poll_device_token_authorized_returns_tokens(monkeypatch):
     from app.ingest.adapters import trakt
     captured = {}
 
@@ -317,21 +340,20 @@ def test_trakt_exchange_pin_returns_tokens(monkeypatch):
         })
 
     monkeypatch.setattr(trakt.requests, "post", fake_post)
-    tokens = trakt.exchange_pin("cid", "secret", "  PIN123  ")
-    assert tokens == {"access_token": "acc", "refresh_token": "ref",
-                      "token_expires_at": 1_000_000 + 7776000}
-    assert captured["url"].endswith("/oauth/token")
-    assert captured["body"]["grant_type"] == "authorization_code"
-    assert captured["body"]["code"] == "PIN123"
-    assert captured["body"]["client_secret"] == "secret"
+    res = trakt.poll_device_token("cid", "secret", "dev123")
+    assert res == {"status": "authorized", "access_token": "acc",
+                   "refresh_token": "ref", "token_expires_at": 1_000_000 + 7776000}
+    assert captured["url"].endswith("/oauth/device/token")
+    assert captured["body"] == {"code": "dev123", "client_id": "cid", "client_secret": "secret"}
 
 
-def test_trakt_exchange_pin_bad_pin_raises(monkeypatch):
+def test_trakt_poll_device_token_pending_and_terminal(monkeypatch):
     from app.ingest.adapters import trakt
-    monkeypatch.setattr(trakt.requests, "post",
-                        lambda *a, **k: _FakeResp(status_code=400, payload={}))
-    with pytest.raises(ValueError):
-        trakt.exchange_pin("cid", "secret", "bad")
+    cases = {400: "pending", 410: "expired", 418: "denied", 429: "slow_down", 404: "error"}
+    for code, expected in cases.items():
+        monkeypatch.setattr(trakt.requests, "post",
+                            lambda *a, _c=code, **k: _FakeResp(status_code=_c, payload={}))
+        assert trakt.poll_device_token("cid", "secret", "dev")["status"] == expected
 
 
 def test_trakt_prepare_config_refreshes_when_expired(monkeypatch):
