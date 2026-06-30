@@ -8,6 +8,66 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>WatchVault</title>
+    <script>
+      // Blank-page recovery: after a PWA update, a cached index.html can reference
+      // a hashed /assets/*.js that the new service worker already purged. The entry
+      // module then fails to load, React never mounts, and #root stays empty (a
+      // black page). Detect that failure and recover once with a clean reload.
+      (function () {
+        var KEY = "wv-asset-recovery";
+        function isAsset(url) {
+          return typeof url === "string" && /\/assets\/[^?]*\.(?:js|mjs|css)(?:\?|$)/.test(url);
+        }
+        function recover() {
+          try {
+            if (sessionStorage.getItem(KEY)) return; // only try once per tab session
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (e) {
+            return; // no sessionStorage -> avoid a reload loop
+          }
+          var reload = function () { location.reload(); };
+          try {
+            var tasks = [];
+            if (window.caches && caches.keys) {
+              tasks.push(caches.keys().then(function (ks) {
+                return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+              }));
+            }
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+              tasks.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+                return Promise.all(rs.map(function (r) { return r.unregister(); }));
+              }));
+            }
+            Promise.all(tasks).then(reload, reload);
+            setTimeout(reload, 2000); // safety net if the promises hang
+          } catch (e) {
+            reload();
+          }
+        }
+        window.addEventListener("error", function (e) {
+          var t = e && e.target;
+          if (t && (t.tagName === "SCRIPT" || t.tagName === "LINK") && isAsset(t.src || t.href)) {
+            recover();
+          }
+        }, true);
+        window.addEventListener("unhandledrejection", function (e) {
+          var msg = e && e.reason && (e.reason.message || String(e.reason));
+          if (msg && /(dynamically imported module|importing a module script failed|ChunkLoadError|Loading chunk)/i.test(msg)) {
+            recover();
+          }
+        });
+        // Once the app has clearly mounted, clear the one-shot guard so a future
+        // legitimate update can recover again.
+        window.addEventListener("load", function () {
+          setTimeout(function () {
+            try {
+              var root = document.getElementById("root");
+              if (root && root.childElementCount > 0) sessionStorage.removeItem(KEY);
+            } catch (e) { /* ignore */ }
+          }, 4000);
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
