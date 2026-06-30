@@ -122,7 +122,7 @@ Then create an automation from the blueprint and fill in the inputs.
 | Input | Required | Description |
 |---|---|---|
 | **Media player** | yes | The `media_player` entity to follow (e.g. `media_player.woonkamer_appletv`). |
-| **WatchVault endpoint** | yes | Full URL of the generic scrobble endpoint. Default `https://watch.vaultstack.eu/api/scrobble/generic`. |
+| **WatchVault endpoint** | yes | Full URL of the generic scrobble endpoint. Default `https://watchvault.tld/api/scrobble/generic`. |
 | **API token** | yes | The `wvapi_` token with `ingest.write`. |
 | **Account label** | no | Profile label (`scrobble_account_map`). Empty = the token's own user. |
 
