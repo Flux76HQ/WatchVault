@@ -96,6 +96,12 @@ const fr = {
   "overviews.timePerActor": "Temps par acteur",
   "overviews.noGenreData": "Aucune donnée de genre pour le moment — enrichissez les titres avec TMDB dans les Paramètres.",
   "overviews.noCastData": "Aucune donnée de distribution pour le moment — enrichissez les titres avec TMDB dans les Paramètres.",
+  "overviews.year": "Année",
+  "common.all": "Tout",
+  "common.prevMonth": "Mois précédent",
+  "common.nextMonth": "Mois suivant",
+  "genre.titlesIn": "Médias regardés · {genre}",
+  "genre.empty": "Rien regardé dans ce genre pour l'instant.",
 
   // ── Search ──────────────────────────────────────────────────────────────
   "search.title": "Recherche",

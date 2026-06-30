@@ -96,6 +96,12 @@ const nl = {
   "overviews.timePerActor": "Tijd per acteur",
   "overviews.noGenreData": "Nog geen genregegevens — verrijk titels met TMDB in Instellingen.",
   "overviews.noCastData": "Nog geen castgegevens — verrijk titels met TMDB in Instellingen.",
+  "overviews.year": "Jaar",
+  "common.all": "Alles",
+  "common.prevMonth": "Vorige maand",
+  "common.nextMonth": "Volgende maand",
+  "genre.titlesIn": "Bekeken media · {genre}",
+  "genre.empty": "Nog niets bekeken in dit genre.",
 
   // ── Search ──────────────────────────────────────────────────────────────
   "search.title": "Zoeken",

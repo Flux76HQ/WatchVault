@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "../lib/api";
 import { useT } from "../lib/i18n";
 import { enqueueEnrich } from "../lib/lazyEnrich";
+import { monthKey, monthLabel } from "../lib/format";
 import { IconFilm, IconTv, IconChevron } from "./icons";
 
 export function Loading({ label }: { label?: string }) {
@@ -74,6 +75,60 @@ export function Section({ title, right, children }: { title: string; right?: Rea
       </div>
       {children}
     </>
+  );
+}
+
+// Segmented toggle, shared by the overview filters and the dashboard.
+export function Seg<T extends string>({ value, onChange, options }: {
+  value: T; onChange: (v: T) => void; options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="seg">
+      {options.map((o) => (
+        <button key={o.value} className={value === o.value ? "active" : ""} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export type Range = "all" | "week" | "month" | "year";
+
+// Time-range filter (Alles / Week / Maand / Jaar) reused across breakdowns.
+export function RangeSeg({ value, onChange }: { value: Range; onChange: (v: Range) => void }) {
+  const { t } = useT();
+  return (
+    <Seg<Range> value={value} onChange={onChange} options={[
+      { value: "all", label: t("common.all") },
+      { value: "week", label: t("overviews.week") },
+      { value: "month", label: t("overviews.month") },
+      { value: "year", label: t("overviews.year") },
+    ]} />
+  );
+}
+
+// Previous/next month navigator (YYYY-MM). The "next" button is disabled once
+// at the current month so you can't page into the future. Uses local-tz labels.
+export function MonthNav({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useT();
+  const shift = (delta: number) => {
+    const [y, m] = value.split("-").map(Number);
+    onChange(monthKey(new Date(y, m - 1 + delta, 1)));
+  };
+  const atCurrent = value >= monthKey(new Date());
+  return (
+    <div className="month-nav">
+      <button type="button" className="month-nav-btn" onClick={() => shift(-1)}
+        aria-label={t("common.prevMonth")}>
+        <IconChevron width={18} height={18} style={{ transform: "rotate(180deg)" }} />
+      </button>
+      <span className="month-nav-label">{monthLabel(value)}</span>
+      <button type="button" className="month-nav-btn" onClick={() => shift(1)} disabled={atCurrent}
+        aria-label={t("common.nextMonth")}>
+        <IconChevron width={18} height={18} />
+      </button>
+    </div>
   );
 }
 

@@ -96,6 +96,12 @@ const de = {
   "overviews.timePerActor": "Zeit pro Schauspieler",
   "overviews.noGenreData": "Noch keine Genredaten — reichere Titel in den Einstellungen mit TMDB an.",
   "overviews.noCastData": "Noch keine Besetzungsdaten — reichere Titel in den Einstellungen mit TMDB an.",
+  "overviews.year": "Jahr",
+  "common.all": "Alle",
+  "common.prevMonth": "Voriger Monat",
+  "common.nextMonth": "Nächster Monat",
+  "genre.titlesIn": "Gesehene Medien · {genre}",
+  "genre.empty": "In diesem Genre noch nichts gesehen.",
 
   // ── Search ──────────────────────────────────────────────────────────────
   "search.title": "Suche",

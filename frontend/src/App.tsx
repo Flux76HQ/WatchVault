@@ -12,6 +12,7 @@ import { Profiles } from "./pages/Profiles";
 import { Settings } from "./pages/Settings";
 import { TitleDetail } from "./pages/TitleDetail";
 import { Person } from "./pages/Person";
+import { GenreTitles } from "./pages/GenreTitles";
 
 export function App() {
   const { ready, user } = useApp();
@@ -31,6 +32,7 @@ export function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/title/:id" element={<TitleDetail />} />
             <Route path="/person/:id" element={<Person />} />
+            <Route path="/genre/:id" element={<GenreTitles />} />
             <Route path="/imports" element={<Imports />} />
             <Route path="/profiles" element={<Profiles />} />
             <Route path="/settings" element={<Settings />} />

@@ -29,6 +29,22 @@ def _hours(seconds, ndigits: int = 2) -> float:
     return round(float(seconds or 0) / 3600, ndigits)
 
 
+_RANGE_TRUNC = {"week": "week", "month": "month", "year": "year"}
+
+
+def _range_clause(range_arg: str | None, col: str) -> str:
+    """SQL fragment limiting ``col`` to the current week/month/year.
+
+    Whitelisted: only ``week``/``month``/``year`` produce a clause; anything
+    else (incl. ``all``/``None``) means no date filter. ``col`` is a trusted
+    column name supplied by the caller, never user input — so the returned
+    fragment carries no SQL-injection surface."""
+    trunc = _RANGE_TRUNC.get((range_arg or "").lower())
+    if not trunc:
+        return ""
+    return f" AND {col} >= date_trunc('{trunc}', now())"
+
+
 # Plex + Jellyfin are folded into one synthetic "Digital Library" platform in the
 # per-platform breakdowns. The frontend localises the label via the key.
 _DIGITAL_LIBRARY_KEYS = ("plex", "jellyfin")
@@ -123,6 +139,34 @@ def summary():
         ],
         "recent": [{"date": r["date"].isoformat(), "count": int(r["count"])} for r in recent],
     })
+
+
+@bp.get("/providers")
+@require_perm("catalog.read")
+def providers_breakdown():
+    """Provider distribution (events + hours), optionally limited to the current
+    week/month/year. Powers the dashboard 'per platform' card."""
+    ids = _ids()
+    if not ids:
+        return jsonify([])
+    rng = _range_clause(request.args.get("range"), "a.watched_date")
+    rows = query_all(
+        "SELECT p.key, p.name, p.color, sum(a.events_count) AS events, "
+        "  sum(a.total_seconds) AS seconds "
+        "FROM watch_daily_agg a JOIN providers p ON p.id = a.provider_id "
+        "WHERE a.user_id = ANY(%s::uuid[])" + rng +
+        " GROUP BY p.key, p.name, p.color ORDER BY events DESC",
+        (ids,),
+    )
+    return jsonify(sorted(
+        [{"key": r["key"], "name": r["name"], "color": r["color"],
+          "events": r["events"], "hours": round(r["seconds"] / 3600, 1)}
+         for r in _fold_digital_library(
+             [{"key": p["key"], "name": p["name"], "color": p["color"],
+               "events": int(p["events"] or 0), "seconds": float(p["seconds"] or 0)}
+              for p in rows],
+             (), ("events", "seconds"))],
+        key=lambda x: x["events"], reverse=True))
 
 
 @bp.get("/heatmap")
@@ -287,19 +331,20 @@ def day_titles():
 @bp.get("/by-genre")
 @require_perm("catalog.read")
 def by_genre():
-    """Time spent per genre."""
+    """Time spent per genre, optionally limited to the current week/month/year."""
     ids = _ids()
+    rng = _range_clause(request.args.get("range"), "we.watched_date")
     rows = query_all(
-        f"SELECT g.name, count(*) AS events, COALESCE(sum({EFF_SECONDS}),0) AS seconds "
+        f"SELECT g.id, g.name, count(*) AS events, COALESCE(sum({EFF_SECONDS}),0) AS seconds "
         f"FROM watch_events we JOIN titles t ON t.id = we.title_id "
         f"JOIN title_genres tg ON tg.title_id = t.id "
         f"JOIN genres g ON g.id = tg.genre_id "
-        f"WHERE we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL "
-        f"GROUP BY g.name ORDER BY seconds DESC",
+        f"WHERE we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL" + rng +
+        " GROUP BY g.id, g.name ORDER BY seconds DESC",
         (ids,),
     )
     return jsonify([
-        {"genre": r["name"], "events": int(r["events"]),
+        {"genre_id": str(r["id"]), "genre": r["name"], "events": int(r["events"]),
          "hours": _hours(r["seconds"])}
         for r in rows
     ])
@@ -308,17 +353,18 @@ def by_genre():
 @bp.get("/by-actor")
 @require_perm("catalog.read")
 def by_actor():
-    """Time spent per actor (cast)."""
+    """Time spent per actor (cast), optionally limited to current week/month/year."""
     ids = _ids()
     limit = min(int(request.args.get("limit", 30)), 100)
+    rng = _range_clause(request.args.get("range"), "we.watched_date")
     rows = query_all(
         f"SELECT pe.id, pe.name, pe.profile_path, count(*) AS events, "
         f"  COALESCE(sum({EFF_SECONDS}),0) AS seconds "
         f"FROM watch_events we JOIN titles t ON t.id = we.title_id "
         f"JOIN title_people tp ON tp.title_id = t.id AND tp.role = 'cast' "
         f"JOIN people pe ON pe.id = tp.person_id "
-        f"WHERE we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL "
-        f"GROUP BY pe.id ORDER BY seconds DESC LIMIT %s",
+        f"WHERE we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL" + rng +
+        " GROUP BY pe.id ORDER BY seconds DESC LIMIT %s",
         (ids, limit),
     )
     return jsonify([
@@ -327,3 +373,36 @@ def by_actor():
          "events": int(r["events"]), "hours": _hours(r["seconds"])}
         for r in rows
     ])
+
+
+@bp.get("/genre-titles")
+@require_perm("catalog.read")
+def genre_titles():
+    """All watched titles in a genre (poster grid), grouped per title."""
+    ids = _ids()
+    genre_id = request.args.get("genre")
+    if not genre_id:
+        return jsonify({"error": "genre=<id> required"}), 400
+    rng = _range_clause(request.args.get("range"), "we.watched_date")
+    g = query_one("SELECT name FROM genres WHERE id = %s::uuid", (genre_id,))
+    rows = query_all(
+        f"SELECT t.id, t.title, t.kind, t.year, t.poster_path, "
+        f"  count(*) AS events, "
+        f"  count(*) FILTER (WHERE we.item_kind='episode') AS episodes, "
+        f"  max(we.watched_date) AS last_watched, "
+        f"  COALESCE(sum({EFF_SECONDS}),0) AS seconds "
+        f"FROM watch_events we JOIN titles t ON t.id = we.title_id "
+        f"JOIN title_genres tg ON tg.title_id = t.id AND tg.genre_id = %s::uuid "
+        f"WHERE we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL" + rng +
+        " GROUP BY t.id ORDER BY events DESC, last_watched DESC",
+        (genre_id, ids),
+    )
+    return jsonify({
+        "genre": g["name"] if g else None,
+        "titles": [
+            {"id": str(r["id"]), "title": r["title"], "kind": r["kind"], "year": r["year"],
+             "poster": poster_url(r["poster_path"]), "events": int(r["events"]),
+             "episodes": int(r["episodes"]), "hours": _hours(r["seconds"])}
+            for r in rows
+        ],
+    })

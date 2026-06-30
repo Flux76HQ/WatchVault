@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/app";
 import { useT, providerLabel } from "../lib/i18n";
 import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Spark } from "../components/charts";
-import { Loading, ErrorState, Empty, Stat, Poster, Section } from "../components/ui";
+import { Loading, ErrorState, Empty, Stat, Poster, Section, MonthNav, RangeSeg, type Range } from "../components/ui";
 import { fmtHours, fmtNum, monthKey, monthLabel } from "../lib/format";
 import { IconChart, IconImport } from "../components/icons";
 import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
@@ -12,10 +13,12 @@ import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
 export function Dashboard() {
   const { scope, user } = useApp();
   const { t } = useT();
-  const thisMonth = monthKey(new Date());
+  const [month, setMonth] = useState(monthKey(new Date()));
+  const [range, setRange] = useState<Range>("all");
 
   const summary = useFetch<any>(() => api.get("/stats/summary", { profile: scope }), [scope]);
-  const month = useFetch<any[]>(() => api.get("/stats/month", { profile: scope, month: thisMonth }), [scope, thisMonth]);
+  const providers = useFetch<any[]>(() => api.get("/stats/providers", { profile: scope, range }), [scope, range]);
+  const month_ = useFetch<any[]>(() => api.get("/stats/month", { profile: scope, month }), [scope, month]);
 
   if (summary.loading) return <Loading />;
   if (summary.error) return <ErrorState error={summary.error} retry={summary.reload} />;
@@ -68,13 +71,17 @@ export function Dashboard() {
           <p className="caption" style={{ marginTop: 12 }}>{t("dashboard.notEnoughTrend")}</p>}
       </div>
 
-      {s.providers?.length > 0 && (
+      {(providers.data?.length ?? 0) > 0 && (
         <div className="card" style={{ marginBottom: 24 }}>
-          <span className="headline">{t("dashboard.byPlatform")}</span>
+          <div className="row" style={{ marginBottom: 4 }}>
+            <span className="headline">{t("dashboard.byPlatform")}</span>
+            <div className="spacer" style={{ flex: 1 }} />
+            <RangeSeg value={range} onChange={setRange} />
+          </div>
           <div className="col" style={{ marginTop: 12, gap: 12 }}>
-            {s.providers.slice(0, 6).map((p: any) => {
-              const maxH = Math.max(...s.providers.map((x: any) => x.hours), 1);
-              return (
+            {(() => {
+              const maxH = Math.max(...providers.data!.map((x: any) => x.hours), 1);
+              return providers.data!.map((p: any) => (
                 <div key={p.key} className="row" style={{ gap: 12 }}>
                   <span style={{ width: 92, fontWeight: 600, fontSize: "0.9rem" }}>{providerLabel(t, p.key, p.name)}</span>
                   <div className="bar-track" style={{ flex: 1 }}>
@@ -82,18 +89,18 @@ export function Dashboard() {
                   </div>
                   <span className="caption" style={{ width: 60, textAlign: "right" }}>{fmtHours(p.hours)}</span>
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         </div>
       )}
 
-      <Section title={t("dashboard.watchedIn", { month: monthLabel(thisMonth) })}
-        right={<Link to="/overviews" className="btn-ghost btn-sm">{t("dashboard.allMonths")}</Link>}>
-        {month.loading ? <Loading /> :
-          month.data && month.data.length > 0 ? (
+      <Section title={t("dashboard.watchedIn", { month: monthLabel(month) })}
+        right={<MonthNav value={month} onChange={setMonth} />}>
+        {month_.loading ? <Loading /> :
+          month_.data && month_.data.length > 0 ? (
             <div className="poster-grid">
-              {month.data.slice(0, 12).map((t2) => (
+              {month_.data.slice(0, 12).map((t2) => (
                 <Poster key={t2.id} to={`/title/${t2.id}`} poster={t2.poster} title={t2.title} kind={t2.kind}
                   enrichId={t2.id}
                   subtitle={t2.kind === "movie" ? `${t2.year || ""}` : `${t2.episodes} ep · ${fmtHours(t2.hours)}`}

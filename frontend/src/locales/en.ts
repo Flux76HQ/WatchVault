@@ -96,6 +96,12 @@ const en = {
   "overviews.timePerActor": "Time per actor",
   "overviews.noGenreData": "No genre data yet — enrich titles with TMDB in Settings.",
   "overviews.noCastData": "No cast data yet — enrich titles with TMDB in Settings.",
+  "overviews.year": "Year",
+  "common.all": "All",
+  "common.prevMonth": "Previous month",
+  "common.nextMonth": "Next month",
+  "genre.titlesIn": "Watched media · {genre}",
+  "genre.empty": "Nothing watched in this genre yet.",
 
   // ── Search ──────────────────────────────────────────────────────────────
   "search.title": "Search",
