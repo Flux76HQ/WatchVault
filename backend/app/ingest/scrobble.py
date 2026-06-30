@@ -278,6 +278,8 @@ def handle_scrobble(household_id: str, evt: ScrobbleEvent, token_user_id: str,
             "  position_seconds = EXCLUDED.position_seconds, duration_seconds = EXCLUDED.duration_seconds, "
             "  state = EXCLUDED.state, year = COALESCE(EXCLUDED.year, scrobble_sessions.year), "
             "  tmdb_id = COALESCE(EXCLUDED.tmdb_id, scrobble_sessions.tmdb_id), "
+            "  kind = EXCLUDED.kind, season = EXCLUDED.season, "
+            "  episode = EXCLUDED.episode, episode_name = EXCLUDED.episode_name, "
             "  updated_at = now(), "
             "  committed_at = CASE WHEN %s THEN NULL ELSE scrobble_sessions.committed_at END "
             "RETURNING id, committed_at",
