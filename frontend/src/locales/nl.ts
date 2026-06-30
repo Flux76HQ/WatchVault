@@ -99,6 +99,7 @@ const nl = {
   "search.noMatches": "Geen resultaten",
   "search.noMatchesHint": "Probeer minder of andere filters.",
   "search.titles": "{count} titels",
+  "search.loadMore": "Meer laden",
   "search.titleOne": "{count} titel",
 
   // ── Imports ─────────────────────────────────────────────────────────────

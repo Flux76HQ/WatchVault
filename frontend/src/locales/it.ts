@@ -99,6 +99,7 @@ const it = {
   "search.noMatches": "Nessun risultato",
   "search.noMatchesHint": "Prova con meno filtri o con filtri diversi.",
   "search.titles": "{count} titoli",
+  "search.loadMore": "Carica altri",
   "search.titleOne": "{count} titolo",
 
   // ── Imports ─────────────────────────────────────────────────────────────
