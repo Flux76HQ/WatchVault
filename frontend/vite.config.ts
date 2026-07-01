@@ -63,9 +63,15 @@ export default defineConfig({
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          charts: ["recharts"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) {
+              return "react";
+            }
+            if (/[\\/]node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor)[\\/]/.test(id)) {
+              return "charts";
+            }
+          }
         },
       },
     },
