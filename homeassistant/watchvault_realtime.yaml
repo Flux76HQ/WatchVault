@@ -106,7 +106,7 @@ actions:
             'com.disney.disneyplus': 'disney', 'com.amazon.aiv.AIVApp': 'prime',
             'nl.rtl.videoland.v2': 'videoland',
             'com.viaplay.skyshowtime.SkyShowtime': 'skyshowtime',
-            'nl.nlziet.app': 'nlziet',
+            'nl.nlziet.app': 'nlziet', 'nl.nlziet.nlziet': 'nlziet',
             'com.apple.tv': 'appletv', 'com.apple.TVWatchList': 'appletv'} %}
         {{ m.get(app_id, 'appletv' if app_id.startswith('com.apple.') else '') }}
   - variables:
@@ -126,7 +126,7 @@ actions:
       payload: >-
         {{ ({'event': event, 'source': 'homeassistant', 'title': title,
              'kind': kind,
-             'platform': platform, 'progress_percent': progress | float(0),
+             'platform': platform, 'app_id': app_id, 'progress_percent': progress | float(0),
              'position_seconds': position | int(0),
              'duration_seconds': duration | int(0),
              'dedup_key': ('appletv:' ~ content_id) if content_id else '',
