@@ -78,6 +78,22 @@ const de = {
   "dashboard.watchedIn": "Angesehen in {month}",
   "dashboard.allMonths": "Alle Monate",
   "dashboard.nothingThisMonth": "Diesen Monat noch nichts angesehen.",
+  "dashboard.unfinished": "Noch nicht fertig",
+  "dashboard.unfinishedEmpty": "Alles gesehen — nichts offen.",
+  "dashboard.epProgress": "{watched}/{total} Folgen",
+  "dashboard.editLayout": "Layout bearbeiten",
+  "dashboard.doneEditing": "Fertig",
+  "dashboard.restoreDefault": "Standard wiederherstellen",
+  "dashboard.moveUp": "Nach oben",
+  "dashboard.moveDown": "Nach unten",
+  "dashboard.hideBlock": "Ausblenden",
+  "dashboard.showBlock": "Einblenden",
+  "dashboard.blockNowPlaying": "Läuft gerade",
+  "dashboard.blockUnfinished": "Noch nicht fertig",
+  "dashboard.blockStats": "Statistiken",
+  "dashboard.blockTrend": "Trend",
+  "dashboard.blockPlatforms": "Nach Plattform",
+  "dashboard.blockMonthly": "Pro Monat gesehen",
 
   // ── Overviews ───────────────────────────────────────────────────────────
   "overviews.title": "Übersichten",
@@ -403,6 +419,8 @@ const de = {
   "scrobble.nowPlaying": "Aktuelle Wiedergabe",
   "scrobble.paused": "Pausiert",
   "scrobble.playing": "Wiedergabe",
+  "scrobble.stopped": "Gestoppt",
+  "scrobble.lastPosition": "Letzte Position",
 };
 
 export type Dict = Record<string, string>;

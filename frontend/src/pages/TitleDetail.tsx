@@ -219,14 +219,18 @@ type Ctl = {
 function LiveNowBar({ live, compact }: { live: any; compact?: boolean }) {
   const { t } = useT();
   const pct = Math.max(0, Math.min(100, Number(live.progress) || 0));
-  const state = live.state === "paused" ? t("scrobble.paused") : t("scrobble.playing");
+  const stopped = live.state === "stopped";
+  const label = stopped ? t("scrobble.lastPosition") : t("scrobble.nowPlaying");
+  const state = live.state === "paused" ? t("scrobble.paused")
+    : stopped ? t("scrobble.stopped") : t("scrobble.playing");
+  const dotClass = stopped ? "is-stopped" : live.state === "paused" ? "is-paused" : "";
   const meta = [providerLabel(t, live.provider, live.provider), live.profile]
     .filter(Boolean).join(" · ");
   const bar = (
-    <div className="live-now-bar">
+    <div className={`live-now-bar ${stopped ? "is-stopped" : ""}`}>
       <div className="live-now-head">
-        <span className={`live-dot ${live.state === "paused" ? "is-paused" : ""}`} />
-        <span className="live-now-label">{t("scrobble.nowPlaying")}</span>
+        <span className={`live-dot ${dotClass}`} />
+        <span className="live-now-label">{label}</span>
         <span className="caption" style={{ marginLeft: "auto" }}>{state} · {Math.round(pct)}%</span>
       </div>
       <div className="bar-track">
@@ -340,12 +344,13 @@ export function TitleDetail() {
   const [enriching, setEnriching] = useState(false);
   const [syncingTrakt, setSyncingTrakt] = useState(false);
 
-  // Expert-mode live layer: mirror the dashboard's Now playing on the title page.
-  // Poll the household's live sessions and surface the ones for THIS title, so an
-  // episode/film shows its real-time progress right where you're looking at it.
+  // Expert-mode progress layer: fetch this title's persistent progress. Unlike
+  // now-playing, /scrobble/progress keeps returning the last known position
+  // after playback stops, so a partly-watched film/episode shows where you left
+  // off right on the title page.
   const { data: liveRaw, refresh: refreshLive } = useFetch<any[]>(
-    () => (prefs.expert ? api.get("/scrobble/now-playing") : Promise.resolve([])),
-    [prefs.expert]);
+    () => (prefs.expert ? api.get("/scrobble/progress", { title_id: id }) : Promise.resolve([])),
+    [prefs.expert, id]);
   useEffect(() => {
     if (!prefs.expert) return;
     const iv = setInterval(() => { refreshLive(); }, 5000);

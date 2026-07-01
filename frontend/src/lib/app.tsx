@@ -17,6 +17,11 @@ export interface User {
   permissions: string[];
 }
 
+export interface DashboardLayout {
+  order: string[];
+  hidden: string[];
+}
+
 export interface Prefs {
   theme: "light" | "dark" | "system";
   accent: string;
@@ -24,6 +29,7 @@ export interface Prefs {
   language: string;
   expert?: boolean;
   cinemaAdd?: boolean;
+  dashboard_layout?: DashboardLayout;
   [k: string]: any;
 }
 
@@ -55,7 +61,7 @@ interface AppCtx {
   can: (perm: string) => boolean;
 }
 
-const DEFAULT_PREFS: Prefs = { theme: "system", accent: "#0a84ff", default_profile: "", language: "en", expert: false, cinemaAdd: true };
+const DEFAULT_PREFS: Prefs = { theme: "system", accent: "#0a84ff", default_profile: "", language: "en", expert: false, cinemaAdd: true, dashboard_layout: { order: [], hidden: [] } };
 
 const Ctx = createContext<AppCtx>(null as any);
 export const useApp = () => useContext(Ctx);

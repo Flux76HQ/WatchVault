@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/app";
 import { useT, providerLabel } from "../lib/i18n";
@@ -6,17 +6,25 @@ import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Spark } from "../components/charts";
 import { Loading, ErrorState, Empty, Stat, Poster, Section, MonthNav, RangeSeg, Seg, type Range } from "../components/ui";
-import { fmtHours, fmtNum, fmtMonth, fmtDayMonth, monthKey, monthLabel } from "../lib/format";
-import { IconChart, IconImport } from "../components/icons";
+import { fmtHours, fmtNum, fmtMonth, fmtDayMonth, fmtDate, monthKey, monthLabel } from "../lib/format";
+import { IconChart, IconImport, IconEye, IconEyeOff, IconChevron } from "../components/icons";
 import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
 
 type RecentRange = "week" | "month" | "year";
 
+// Dashboard blocks are a registry so the layout can be reordered / hidden per
+// user (persisted in prefs.dashboard_layout, synced via /preferences). Blocks
+// marked `expert` only appear when Expert mode is on. Unknown/new ids in a saved
+// layout are ignored and new blocks are appended, so old layouts stay valid.
+type BlockId = "nowPlaying" | "unfinished" | "stats" | "trend" | "platforms" | "monthly";
+const DEFAULT_ORDER: BlockId[] = ["nowPlaying", "unfinished", "stats", "trend", "platforms", "monthly"];
+
 export function Dashboard() {
-  const { scope, user } = useApp();
+  const { scope, user, prefs, savePrefs } = useApp();
   const { t } = useT();
   const [range, setRange] = useState<Range>("all");
   const [recentRange, setRecentRange] = useState<RecentRange>("month");
+  const [editing, setEditing] = useState(false);
 
   const summary = useFetch<any>(() => api.get("/stats/summary", { profile: scope }), [scope]);
   const providers = useFetch<any[]>(() => api.get("/stats/providers", { profile: scope, range }), [scope, range]);
@@ -44,45 +52,45 @@ export function Dashboard() {
 
   const scopeName = scope === "all" ? t("dashboard.theHousehold") : t("dashboard.thisProfile");
 
-  return (
-    <>
-      <div className="section-head">
-        <div className="col" style={{ gap: 2 }}>
-          <h1 className="large-title">{t("nav.dashboard")}</h1>
-          <span className="muted">{t("dashboard.overviewFor", { scope: scopeName })}</span>
+  const blocks: Record<BlockId, { labelKey: string; expert?: boolean; node: ReactNode }> = {
+    nowPlaying: { labelKey: "dashboard.blockNowPlaying", expert: true, node: <NowPlaying scope={scope} /> },
+    unfinished: { labelKey: "dashboard.blockUnfinished", expert: true, node: <UnfinishedTitles scope={scope} /> },
+    stats: {
+      labelKey: "dashboard.blockStats",
+      node: (
+        <div className="stat-grid" style={{ marginBottom: 24 }}>
+          <Stat value={fmtHours(s.totals.hours)} label={t("dashboard.totalWatchTime")} />
+          <Stat value={fmtNum(s.totals.titles)} label={t("dashboard.uniqueTitles")} />
+          <Stat value={fmtNum(s.totals.movies)} label={t("common.movies")} />
+          <Stat value={fmtNum(s.totals.episodes)} label={t("common.episodes")} />
         </div>
-        <div className="spacer" style={{ flex: 1 }} />
-        <AddCinemaFilmButton variant="ghost" />
-      </div>
-
-      <NowPlaying scope={scope} />
-
-      <div className="stat-grid" style={{ marginBottom: 24 }}>
-        <Stat value={fmtHours(s.totals.hours)} label={t("dashboard.totalWatchTime")} />
-        <Stat value={fmtNum(s.totals.titles)} label={t("dashboard.uniqueTitles")} />
-        <Stat value={fmtNum(s.totals.movies)} label={t("common.movies")} />
-        <Stat value={fmtNum(s.totals.episodes)} label={t("common.episodes")} />
-      </div>
-
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div className="row">
-          <div className="col" style={{ gap: 2 }}>
-            <span className="headline">{t(recentTitle)}</span>
-            <span className="caption">{t("dashboard.thisMonthSummary", { events: fmtNum(s.this_month.events), hours: fmtHours(s.this_month.hours) })}</span>
+      ),
+    },
+    trend: {
+      labelKey: "dashboard.blockTrend",
+      node: (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="row">
+            <div className="col" style={{ gap: 2 }}>
+              <span className="headline">{t(recentTitle)}</span>
+              <span className="caption">{t("dashboard.thisMonthSummary", { events: fmtNum(s.this_month.events), hours: fmtHours(s.this_month.hours) })}</span>
+            </div>
+            <div className="spacer" style={{ flex: 1 }} />
+            <Seg<RecentRange> value={recentRange} onChange={setRecentRange} options={[
+              { value: "week", label: t("overviews.week") },
+              { value: "month", label: t("overviews.month") },
+              { value: "year", label: t("overviews.year") },
+            ]} />
+            <Link to="/overviews" className="btn-ghost btn-sm" style={{ marginLeft: 8 }}><IconChart width={16} height={16} /> {t("dashboard.trends")}</Link>
           </div>
-          <div className="spacer" style={{ flex: 1 }} />
-          <Seg<RecentRange> value={recentRange} onChange={setRecentRange} options={[
-            { value: "week", label: t("overviews.week") },
-            { value: "month", label: t("overviews.month") },
-            { value: "year", label: t("overviews.year") },
-          ]} />
-          <Link to="/overviews" className="btn-ghost btn-sm" style={{ marginLeft: 8 }}><IconChart width={16} height={16} /> {t("dashboard.trends")}</Link>
+          {spark.length > 1 ? <Spark data={spark} height={70} /> :
+            <p className="caption" style={{ marginTop: 12 }}>{t("dashboard.notEnoughTrend")}</p>}
         </div>
-        {spark.length > 1 ? <Spark data={spark} height={70} /> :
-          <p className="caption" style={{ marginTop: 12 }}>{t("dashboard.notEnoughTrend")}</p>}
-      </div>
-
-      {!summary.error && !summary.loading && (
+      ),
+    },
+    platforms: {
+      labelKey: "dashboard.blockPlatforms",
+      node: (
         <div className="card" style={{ marginBottom: 24 }}>
           <div className="row" style={{ marginBottom: 4 }}>
             <span className="headline">{t("dashboard.byPlatform")}</span>
@@ -107,10 +115,140 @@ export function Dashboard() {
               </div>
             ) : <p className="muted" style={{ marginTop: 12 }}>{t("dashboard.noPlatformPeriod")}</p>}
         </div>
-      )}
+      ),
+    },
+    monthly: { labelKey: "dashboard.blockMonthly", node: <MonthlyTitles scope={scope} /> },
+  };
 
-      <MonthlyTitles scope={scope} />
+  // Resolve saved layout → ordered, expert-gated block ids. Saved order first
+  // (valid ids only), then any registry blocks the layout doesn't mention.
+  const layout = prefs.dashboard_layout || { order: [], hidden: [] };
+  const savedOrder = (layout.order || []).filter((x): x is BlockId => (DEFAULT_ORDER as string[]).includes(x));
+  const fullOrder: BlockId[] = [...savedOrder, ...DEFAULT_ORDER.filter((id) => !savedOrder.includes(id))];
+  const hidden = new Set<string>(layout.hidden || []);
+  const gated = fullOrder.filter((id) => !blocks[id].expert || prefs.expert);
+  const rendered = editing ? gated : gated.filter((id) => !hidden.has(id));
+
+  const persist = (order: BlockId[], hid: string[]) => {
+    savePrefs({ dashboard_layout: { order, hidden: hid } }).catch(() => {});
+  };
+  const move = (id: BlockId, dir: -1 | 1) => {
+    const i = gated.indexOf(id);
+    const j = i + dir;
+    if (j < 0 || j >= gated.length) return;
+    const neighbor = gated[j];
+    const order = [...fullOrder];
+    const oi = order.indexOf(id), oj = order.indexOf(neighbor);
+    [order[oi], order[oj]] = [order[oj], order[oi]];
+    persist(order, [...hidden]);
+  };
+  const toggleHide = (id: BlockId) => {
+    const h = new Set(hidden);
+    if (h.has(id)) h.delete(id); else h.add(id);
+    persist(fullOrder, [...h]);
+  };
+
+  return (
+    <>
+      <div className="section-head">
+        <div className="col" style={{ gap: 2 }}>
+          <h1 className="large-title">{t("nav.dashboard")}</h1>
+          <span className="muted">{t("dashboard.overviewFor", { scope: scopeName })}</span>
+        </div>
+        <div className="spacer" style={{ flex: 1 }} />
+        {editing && <button className="btn-ghost btn-sm" onClick={() => persist([], [])}>{t("dashboard.restoreDefault")}</button>}
+        <button className="btn-ghost btn-sm" onClick={() => setEditing((e) => !e)}>
+          {editing ? t("dashboard.doneEditing") : t("dashboard.editLayout")}
+        </button>
+        {!editing && <AddCinemaFilmButton variant="ghost" />}
+      </div>
+
+      {rendered.map((id) => {
+        if (!editing) return <Fragment key={id}>{blocks[id].node}</Fragment>;
+        const gi = gated.indexOf(id);
+        return (
+          <EditBlock key={id} label={t(blocks[id].labelKey)} hidden={hidden.has(id)}
+            first={gi === 0} last={gi === gated.length - 1}
+            onUp={() => move(id, -1)} onDown={() => move(id, 1)} onToggle={() => toggleHide(id)}>
+            {blocks[id].node}
+          </EditBlock>
+        );
+      })}
     </>
+  );
+}
+
+// Edit-mode wrapper: a control bar (reorder up/down + hide/show) above each
+// block. Hidden blocks stay listed here (dimmed) so they can be toggled back on.
+function EditBlock({ label, hidden, first, last, onUp, onDown, onToggle, children }: {
+  label: string; hidden: boolean; first: boolean; last: boolean;
+  onUp: () => void; onDown: () => void; onToggle: () => void; children: ReactNode;
+}) {
+  const { t } = useT();
+  return (
+    <div className={`dash-edit-block ${hidden ? "is-hidden" : ""}`}>
+      <div className="dash-edit-bar">
+        <span className="dash-edit-label">{label}</span>
+        <div className="spacer" style={{ flex: 1 }} />
+        <button className="btn-ghost btn-sm dash-edit-btn" disabled={first} onClick={onUp} title={t("dashboard.moveUp")} aria-label={t("dashboard.moveUp")}>
+          <IconChevron width={16} height={16} style={{ transform: "rotate(-90deg)" }} />
+        </button>
+        <button className="btn-ghost btn-sm dash-edit-btn" disabled={last} onClick={onDown} title={t("dashboard.moveDown")} aria-label={t("dashboard.moveDown")}>
+          <IconChevron width={16} height={16} style={{ transform: "rotate(90deg)" }} />
+        </button>
+        <button className="btn-ghost btn-sm dash-edit-btn" onClick={onToggle}
+          title={hidden ? t("dashboard.showBlock") : t("dashboard.hideBlock")}
+          aria-label={hidden ? t("dashboard.showBlock") : t("dashboard.hideBlock")}>
+          {hidden ? <IconEyeOff width={16} height={16} /> : <IconEye width={16} height={16} />}
+        </button>
+      </div>
+      <div className="dash-edit-body">{children}</div>
+    </div>
+  );
+}
+
+// Titles started but not finished — the precomputed "still watching" tracker
+// (Expert mode). Series show watched/total episodes with a progress bar; movies
+// show a film badge. Renders nothing above a Section header when empty.
+function UnfinishedTitles({ scope }: { scope: string }) {
+  const { t } = useT();
+  const { data, loading, error, reload } = useFetch<any[]>(
+    () => api.get("/stats/unfinished", { profile: scope }), [scope]);
+
+  return (
+    <Section title={t("dashboard.unfinished")}>
+      {loading ? <Loading /> : error ? <ErrorState error={error} retry={reload} /> :
+        data && data.length ? (
+          <div className="card unfinished-list">
+            {data.map((u: any) => {
+              const total = u.total_episodes || 0;
+              const watched = u.watched_episodes || 0;
+              const pct = total ? Math.round((watched / total) * 100) : 0;
+              return (
+                <Link key={u.id} to={`/title/${u.id}`} className="unfinished-row">
+                  <div className="unfinished-poster">
+                    {u.poster ? <img src={u.poster} alt="" loading="lazy" /> : <div className="ph" />}
+                  </div>
+                  <div className="col" style={{ flex: 1, minWidth: 0, gap: 5 }}>
+                    <strong className="unfinished-title">{u.title}</strong>
+                    <span className="caption">
+                      {u.kind === "movie" ? t("common.film")
+                        : t("dashboard.epProgress", { watched, total })}
+                      {u.last_activity ? ` · ${fmtDate(u.last_activity)}` : ""}
+                    </span>
+                    {u.kind !== "movie" && total > 0 && (
+                      <div className="bar-track"><div className="bar-fill" style={{ width: `${pct}%` }} /></div>
+                    )}
+                  </div>
+                  {u.kind !== "movie" && total > 0 && (
+                    <span className="caption unfinished-count">{watched}/{total}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ) : <p className="muted">{t("dashboard.unfinishedEmpty")}</p>}
+    </Section>
   );
 }
 
