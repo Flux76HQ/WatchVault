@@ -78,6 +78,22 @@ const it = {
   "dashboard.watchedIn": "Visti in {month}",
   "dashboard.allMonths": "Tutti i mesi",
   "dashboard.nothingThisMonth": "Niente visto finora questo mese.",
+  "dashboard.unfinished": "Ancora da finire",
+  "dashboard.unfinishedEmpty": "Tutto visto — niente in sospeso.",
+  "dashboard.epProgress": "{watched}/{total} ep.",
+  "dashboard.editLayout": "Modifica layout",
+  "dashboard.doneEditing": "Fatto",
+  "dashboard.restoreDefault": "Ripristina predefinito",
+  "dashboard.moveUp": "Su",
+  "dashboard.moveDown": "Giù",
+  "dashboard.hideBlock": "Nascondi",
+  "dashboard.showBlock": "Mostra",
+  "dashboard.blockNowPlaying": "In riproduzione",
+  "dashboard.blockUnfinished": "Ancora da finire",
+  "dashboard.blockStats": "Statistiche",
+  "dashboard.blockTrend": "Andamento",
+  "dashboard.blockPlatforms": "Per piattaforma",
+  "dashboard.blockMonthly": "Visto per mese",
 
   // ── Overviews ───────────────────────────────────────────────────────────
   "overviews.title": "Panoramiche",
@@ -403,6 +419,8 @@ const it = {
   "scrobble.nowPlaying": "In riproduzione",
   "scrobble.paused": "In pausa",
   "scrobble.playing": "In riproduzione",
+  "scrobble.stopped": "Interrotto",
+  "scrobble.lastPosition": "Ultima posizione",
 };
 
 export type Dict = Record<string, string>;

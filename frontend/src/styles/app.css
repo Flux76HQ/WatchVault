@@ -580,6 +580,9 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
   animation: live-pulse 1.6s ease-out infinite;
 }
 .live-dot.is-paused { animation: none; opacity: 0.5; }
+.live-dot.is-stopped { animation: none; opacity: 0.4; background: var(--text-secondary); box-shadow: none; }
+.live-now-bar.is-stopped .live-now-label { color: var(--text-secondary); }
+.live-now-bar.is-stopped .bar-fill { opacity: 0.6; }
 .episode-row.is-live { box-shadow: inset 3px 0 0 var(--accent); }
 @keyframes live-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
@@ -587,6 +590,32 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
   100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+/* Dashboard edit mode: reorder / hide-show blocks (Expert-friendly layout). */
+.dash-edit-block { margin-bottom: 16px; border: 1px dashed var(--border); border-radius: var(--radius-lg, 14px); padding: 8px; }
+.dash-edit-bar { display: flex; align-items: center; gap: 6px; padding: 2px 4px 8px; }
+.dash-edit-label { font-weight: 700; font-size: 0.85rem; }
+.dash-edit-btn { display: inline-flex; align-items: center; justify-content: center; padding: 4px; min-height: 0; }
+.dash-edit-btn:disabled { opacity: 0.35; cursor: default; }
+.dash-edit-block.is-hidden .dash-edit-body { opacity: 0.4; }
+.dash-edit-body > *:last-child { margin-bottom: 0 !important; }
+
+/* "Still watching" (unfinished) dashboard tracker. */
+.unfinished-list { display: flex; flex-direction: column; gap: 0; padding: 4px 4px; }
+.unfinished-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 8px;
+  border-radius: var(--radius, 10px); color: inherit; text-decoration: none;
+}
+.unfinished-row + .unfinished-row { border-top: 1px solid var(--border); }
+.unfinished-row:hover { background: var(--bg-hover, rgba(127,127,127,0.08)); }
+.unfinished-poster {
+  width: 42px; flex-shrink: 0; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden;
+  background: var(--bg-elev-2, rgba(127,127,127,0.15));
+}
+.unfinished-poster img { width: 100%; height: 100%; object-fit: cover; }
+.unfinished-poster .ph { width: 100%; height: 100%; }
+.unfinished-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unfinished-count { flex-shrink: 0; font-weight: 700; color: var(--accent); }
 
 /* Manual "mark watched" controls (date chips + add button) */
 .manual-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }

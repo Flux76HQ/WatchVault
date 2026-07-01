@@ -78,6 +78,22 @@ const nl = {
   "dashboard.watchedIn": "Bekeken in {month}",
   "dashboard.allMonths": "Alle maanden",
   "dashboard.nothingThisMonth": "Deze maand nog niets bekeken.",
+  "dashboard.unfinished": "Nog niet afgekeken",
+  "dashboard.unfinishedEmpty": "Alles afgekeken — niets openstaan.",
+  "dashboard.epProgress": "{watched}/{total} afl.",
+  "dashboard.editLayout": "Indeling bewerken",
+  "dashboard.doneEditing": "Klaar",
+  "dashboard.restoreDefault": "Standaard herstellen",
+  "dashboard.moveUp": "Omhoog",
+  "dashboard.moveDown": "Omlaag",
+  "dashboard.hideBlock": "Verbergen",
+  "dashboard.showBlock": "Tonen",
+  "dashboard.blockNowPlaying": "Nu aan het kijken",
+  "dashboard.blockUnfinished": "Nog niet afgekeken",
+  "dashboard.blockStats": "Statistieken",
+  "dashboard.blockTrend": "Trend",
+  "dashboard.blockPlatforms": "Per platform",
+  "dashboard.blockMonthly": "Bekeken per maand",
 
   // ── Overviews ───────────────────────────────────────────────────────────
   "overviews.title": "Overzichten",
@@ -403,6 +419,8 @@ const nl = {
   "scrobble.nowPlaying": "Nu aan het kijken",
   "scrobble.paused": "Gepauzeerd",
   "scrobble.playing": "Speelt af",
+  "scrobble.stopped": "Gestopt",
+  "scrobble.lastPosition": "Laatst gezien tot",
 };
 
 export type Dict = Record<string, string>;
