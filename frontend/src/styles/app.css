@@ -568,6 +568,26 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 .episode-status { font-size: 0.78rem; font-weight: 600; color: var(--text-tertiary); margin-top: 2px; }
 .episode-status.on { color: var(--accent); }
 
+/* Live "Now playing" progress mirrored from the dashboard onto the title/episode. */
+.live-now-card { margin-bottom: 20px; }
+.live-now-bar { display: flex; flex-direction: column; gap: 6px; }
+.episode-body .live-now-bar { margin-top: 4px; }
+.live-now-head { display: flex; align-items: center; gap: 8px; }
+.live-now-label { font-weight: 700; font-size: 0.82rem; color: var(--accent); }
+.live-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); box-shadow: 0 0 0 0 var(--accent);
+  animation: live-pulse 1.6s ease-out infinite;
+}
+.live-dot.is-paused { animation: none; opacity: 0.5; }
+.episode-row.is-live { box-shadow: inset 3px 0 0 var(--accent); }
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
 /* Manual "mark watched" controls (date chips + add button) */
 .manual-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
 .manual-x {

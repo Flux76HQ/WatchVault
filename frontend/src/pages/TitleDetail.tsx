@@ -213,14 +213,39 @@ type Ctl = {
   removeEpisode: (episodeId: string, date: string) => void;
 };
 
-function EpisodeRow({ ep, ctl }: { ep: any; ctl: Ctl }) {
+// Live progress bar mirrored from the dashboard's Now playing, rendered on the
+// title/episode it belongs to. `compact` trims it for an episode row; the full
+// variant sits in its own card for a movie.
+function LiveNowBar({ live, compact }: { live: any; compact?: boolean }) {
+  const { t } = useT();
+  const pct = Math.max(0, Math.min(100, Number(live.progress) || 0));
+  const state = live.state === "paused" ? t("scrobble.paused") : t("scrobble.playing");
+  const meta = [providerLabel(t, live.provider, live.provider), live.profile]
+    .filter(Boolean).join(" · ");
+  const bar = (
+    <div className="live-now-bar">
+      <div className="live-now-head">
+        <span className={`live-dot ${live.state === "paused" ? "is-paused" : ""}`} />
+        <span className="live-now-label">{t("scrobble.nowPlaying")}</span>
+        <span className="caption" style={{ marginLeft: "auto" }}>{state} · {Math.round(pct)}%</span>
+      </div>
+      <div className="bar-track">
+        <div className="bar-fill" style={{ width: `${pct}%`, background: live.provider_color || "var(--accent)" }} />
+      </div>
+      {!compact && meta && <span className="caption">{meta}</span>}
+    </div>
+  );
+  return compact ? bar : <div className="card live-now-card">{bar}</div>;
+}
+
+function EpisodeRow({ ep, ctl, live }: { ep: any; ctl: Ctl; live?: any }) {
   const { t } = useT();
   const meta: string[] = [];
   if (ep.air_date) meta.push(fmtDate(ep.air_date));
   if (ep.runtime_minutes) meta.push(t("title.min", { n: ep.runtime_minutes }));
   const dates: string[] = ep.watch_dates?.length ? ep.watch_dates : (ep.last_watched ? [ep.last_watched] : []);
   return (
-    <div className={`episode-row ${ep.watched ? "is-watched" : ""}`}>
+    <div className={`episode-row ${ep.watched ? "is-watched" : ""} ${live ? "is-live" : ""}`}>
       <div className="episode-still">
         {ep.still ? <img src={ep.still} alt="" loading="lazy" /> : <span className="episode-still-ph">{ep.episode}</span>}
         {ep.watched && <span className="episode-check" title={t("title.watched")}><IconCheck width={14} height={14} /></span>}
@@ -232,6 +257,7 @@ function EpisodeRow({ ep, ctl }: { ep: any; ctl: Ctl }) {
         </div>
         {meta.length > 0 && <span className="caption">{meta.join(" · ")}</span>}
         {ep.overview && <p className="episode-overview">{ep.overview}</p>}
+        {live && <LiveNowBar live={live} compact />}
         {(!ctl.canEdit || dates.length === 0) && (
           <span className={`episode-status ${ep.watched ? "on" : ""}`}>
             {dates.length > 0
@@ -252,7 +278,7 @@ function EpisodeRow({ ep, ctl }: { ep: any; ctl: Ctl }) {
   );
 }
 
-function Seasons({ seasons, ctl }: { seasons: any[]; ctl: Ctl }) {
+function Seasons({ seasons, ctl, live }: { seasons: any[]; ctl: Ctl; live?: Map<string, any> }) {
   const { t } = useT();
   const [active, setActive] = useState(seasons[0]?.season ?? 0);
   const current = seasons.find((s) => s.season === active) || seasons[0];
@@ -293,7 +319,10 @@ function Seasons({ seasons, ctl }: { seasons: any[]; ctl: Ctl }) {
           )}
         </div>
         <div className="episode-list">
-          {current.episodes.map((ep: any) => <EpisodeRow key={ep.id} ep={ep} ctl={ctl} />)}
+          {current.episodes.map((ep: any) => (
+            <EpisodeRow key={ep.id} ep={ep} ctl={ctl}
+              live={live?.get(`${current.season}-${ep.episode}`)} />
+          ))}
         </div>
       </div>
     </>
@@ -302,7 +331,7 @@ function Seasons({ seasons, ctl }: { seasons: any[]; ctl: Ctl }) {
 
 export function TitleDetail() {
   const { id } = useParams();
-  const { scope, can, toast } = useApp();
+  const { scope, can, toast, prefs } = useApp();
   const { t, lang } = useT();
   const tGenre = useGenre();
   const { data: ti, loading, error, reload, refresh } = useFetch<any>(
@@ -310,6 +339,18 @@ export function TitleDetail() {
   const { data: providers } = useFetch<any[]>(() => api.get("/providers"), []);
   const [enriching, setEnriching] = useState(false);
   const [syncingTrakt, setSyncingTrakt] = useState(false);
+
+  // Expert-mode live layer: mirror the dashboard's Now playing on the title page.
+  // Poll the household's live sessions and surface the ones for THIS title, so an
+  // episode/film shows its real-time progress right where you're looking at it.
+  const { data: liveRaw, refresh: refreshLive } = useFetch<any[]>(
+    () => (prefs.expert ? api.get("/scrobble/now-playing") : Promise.resolve([])),
+    [prefs.expert]);
+  useEffect(() => {
+    if (!prefs.expert) return;
+    const iv = setInterval(() => { refreshLive(); }, 5000);
+    return () => clearInterval(iv);
+  }, [prefs.expert, refreshLive]);
 
   const canEdit = can("ingest.write");
   const targetBody = () => (scope && scope !== "all" ? { user_id: scope } : {});
@@ -390,6 +431,17 @@ export function TitleDetail() {
     },
   };
 
+  // Split live sessions for this title: a movie has at most one, a series keys
+  // its live sessions by `season-episode` so each episode row can find its own.
+  const liveForTitle = (liveRaw || []).filter((s: any) => s.title_id === id);
+  const movieLive = ti.kind === "movie" ? liveForTitle[0] : undefined;
+  const epLive = new Map<string, any>();
+  if (ti.kind === "series") {
+    for (const s of liveForTitle) {
+      if (s.season != null && s.episode != null) epLive.set(`${s.season}-${s.episode}`, s);
+    }
+  }
+
   return (
     <>
       <BackLink />
@@ -424,6 +476,10 @@ export function TitleDetail() {
 
       {ti.overview && <p className="muted" style={{ margin: "20px 0" }}>{ti.overview}</p>}
 
+      {/* Live now-playing for a movie: real-time progress mirrored from the
+          dashboard, shown right on the title it belongs to (Expert mode). */}
+      {movieLive && <LiveNowBar live={movieLive} />}
+
       {canEdit && (
         <div className="row wrap" style={{ gap: 10, marginBottom: 20, alignItems: "center" }}>
           <button className="btn-ghost btn-sm" disabled={enriching} onClick={enrich}>
@@ -455,7 +511,7 @@ export function TitleDetail() {
         </div>
       )}
 
-      {ti.kind === "series" && ti.seasons?.length > 0 && <Seasons seasons={ti.seasons} ctl={ctl} />}
+      {ti.kind === "series" && ti.seasons?.length > 0 && <Seasons seasons={ti.seasons} ctl={ctl} live={epLive} />}
 
       {ti.cast?.length > 0 && (
         <>
