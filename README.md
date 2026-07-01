@@ -251,6 +251,7 @@ Then create an automation from the blueprint and fill in the inputs.
 | `title` | `media_title`, falling back to `media_artist` (HBO Max puts the title there). An empty title skips the event. |
 | `source` | `homeassistant`. |
 | `platform` | Provider key derived from `app_id` (`com.wbd.hbomax`→`hbomax`, `com.apple.*`→`appletv`, …). |
+| `app_id` | The raw Home Assistant app id (e.g. NLZiet = `nl.nlziet.nlziet`). Forwarded so the backend can map new services to a provider itself when `platform` is empty — no blueprint re-import needed. |
 | `kind` | `series` when `media_duration ≤ 4200s` (≤ 70 min), otherwise `movie`. Apple TV exposes no season/episode, so duration is used as a heuristic. |
 | `progress_percent`, `position_seconds`, `duration_seconds` | Live progress; position is extrapolated from `media_position` + elapsed time while playing. |
 | `dedup_key` | `appletv:<media_content_id>` — stable per playback so repeats don't create duplicate history. |

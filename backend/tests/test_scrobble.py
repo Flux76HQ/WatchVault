@@ -118,6 +118,40 @@ def test_parse_generic_requires_title_and_known_event():
     assert parse_generic_payload({"title": "X", "event": "bogus"}) is None
 
 
+def test_parse_generic_platform_from_app_id_nlziet():
+    # HA reports NLZiet as app_id 'nl.nlziet.nlziet' and sends no explicit
+    # platform — the backend derives it so it is not parked on 'homeassistant'.
+    evt = parse_generic_payload({
+        "title": "Flikken Maastricht", "event": "play",
+        "app_id": "nl.nlziet.nlziet",
+    })
+    assert evt.platform_key == "nlziet"
+    assert evt.raw.get("platform") == "nlziet"
+
+
+def test_parse_generic_explicit_platform_beats_app_id():
+    evt = parse_generic_payload({
+        "title": "X", "event": "play",
+        "platform": "netflix", "app_id": "nl.nlziet.nlziet",
+    })
+    assert evt.platform_key == "netflix"
+
+
+def test_parse_generic_apple_app_id_prefix_falls_back_to_appletv():
+    evt = parse_generic_payload({
+        "title": "X", "event": "play", "app_id": "com.apple.something",
+    })
+    assert evt.platform_key == "appletv"
+
+
+def test_parse_generic_unknown_app_id_leaves_platform_unset():
+    evt = parse_generic_payload({
+        "title": "X", "event": "play", "app_id": "com.unknown.app",
+    })
+    assert evt.platform_key is None
+    assert "platform" not in evt.raw
+
+
 def test_parse_generic_explicit_dedup_key_wins():
     evt = parse_generic_payload({"title": "X", "event": "play", "dedup_key": "k-1"})
     assert evt.dedup_key == "k-1"

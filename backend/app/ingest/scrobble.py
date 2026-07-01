@@ -33,6 +33,40 @@ _STATE_BY_EVENT = {
 }
 DEFAULT_THRESHOLD = 90
 
+# Home Assistant reports the playing app's bundle/app id (e.g. NLZiet =
+# 'nl.nlziet.nlziet'). Map those to our provider keys so a scrobble is
+# attributed to the real streaming service instead of the 'homeassistant'
+# fallback bucket. Kept in sync with the mapping in the HA blueprint
+# (homeassistant/watchvault_realtime.yaml); adding a new service here means a
+# backend change only — no blueprint re-import needed, as long as the payload
+# forwards `app_id`.
+_APP_ID_PLATFORM = {
+    "com.wbd.hbomax": "hbomax",
+    "com.netflix.Netflix": "netflix",
+    "com.disney.disneyplus": "disney",
+    "com.amazon.aiv.AIVApp": "prime",
+    "nl.rtl.videoland.v2": "videoland",
+    "com.viaplay.skyshowtime.SkyShowtime": "skyshowtime",
+    "nl.nlziet.app": "nlziet",
+    "nl.nlziet.nlziet": "nlziet",
+    "com.apple.tv": "appletv",
+    "com.apple.TVWatchList": "appletv",
+}
+
+
+def _platform_from_app_id(app_id: Optional[str]) -> Optional[str]:
+    """Derive a provider key from a Home Assistant `app_id`. Falls back to
+    'appletv' for any com.apple.* bundle, else None (unknown app)."""
+    app_id = (app_id or "").strip()
+    if not app_id:
+        return None
+    key = _APP_ID_PLATFORM.get(app_id)
+    if key:
+        return key
+    if app_id.startswith("com.apple."):
+        return "appletv"
+    return None
+
 
 @dataclass
 class ScrobbleEvent:
@@ -163,17 +197,22 @@ def parse_generic_payload(body: dict) -> Optional[ScrobbleEvent]:
         progress = _progress(position_s, duration_s)
     dedup = body.get("dedup_key") or \
         f"{source}:{normalize_text(title)}:{season}:{episode}"
+    # Prefer an explicit `platform`, else derive it from the HA `app_id` so the
+    # backend can map new services without a blueprint re-import.
+    platform = (body.get("platform") or "").strip() or None
+    if not platform:
+        platform = _platform_from_app_id(body.get("app_id"))
     return ScrobbleEvent(
         source=source, event=event,
         account_label=(body.get("account") or "").strip(),
-        platform_key=(body.get("platform") or None),
+        platform_key=platform,
         raw_title=title, kind=kind, season=season, episode=episode,
         episode_name=body.get("episode_name"),
         year=_int(body.get("year")), tmdb_id=_int(body.get("tmdb_id")),
         progress_percent=progress,
         position_seconds=position_s, duration_seconds=duration_s,
         dedup_key=str(dedup),
-        raw={"source": source, **({"platform": body["platform"]} if body.get("platform") else {})},
+        raw={"source": source, **({"platform": platform} if platform else {})},
     )
 
 
