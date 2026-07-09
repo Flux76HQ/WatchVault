@@ -5,9 +5,9 @@ import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Loading, ErrorState, BackLink } from "../components/ui";
 import { TagChips } from "../components/TagChips";
-import { IconSparkles, IconCheck, IconRefresh, IconPlus, IconClose } from "../components/icons";
+import { IconSparkles, IconCheck, IconRefresh, IconPlus, IconClose, IconPencil } from "../components/icons";
 import { fmtDate, todayLocalKey, localDateKey } from "../lib/format";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const today = () => todayLocalKey();
 const yesterday = () => {
@@ -350,6 +350,85 @@ function Seasons({ seasons, ctl, live }: { seasons: any[]; ctl: Ctl; live?: Map<
   );
 }
 
+// Manual title + poster override editor. Renaming a title or uploading a poster
+// locks that field against TMDB/Trakt enrichment; "remove override" clears the
+// lock and lets metadata take over again on the next open.
+function TitleEditor({ ti, onDone }: { ti: any; onDone: () => void }) {
+  const { toast } = useApp();
+  const { t } = useT();
+  const [title, setTitle] = useState<string>(ti.title || "");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function run(fn: () => Promise<any>, ok: string) {
+    setBusy(true);
+    try {
+      await fn();
+      toast(ok, "ok");
+      onDone();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const saveTitle = () => {
+    const v = title.trim();
+    if (!v || v === ti.title) return;
+    run(() => api.patch(`/titles/${ti.id}/rename`, { title: v }), t("title.edit.saved"));
+  };
+  const clearTitle = () =>
+    run(() => api.del(`/titles/${ti.id}/rename`), t("title.edit.reverted"));
+  const clearPoster = () =>
+    run(() => api.del(`/titles/${ti.id}/poster`), t("title.edit.reverted"));
+  const uploadPoster = (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    run(() => api.upload(`/titles/${ti.id}/poster`, fd), t("title.edit.saved"));
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <strong>{t("title.edit.heading")}</strong>
+        <button className="btn-ghost btn-sm" onClick={onDone} aria-label={t("common.close")}>
+          <IconClose width={16} height={16} />
+        </button>
+      </div>
+
+      <label className="caption" style={{ display: "block", marginBottom: 4 }}>{t("title.edit.titleLabel")}</label>
+      <div className="row wrap" style={{ gap: 8, alignItems: "center", marginBottom: 16 }}>
+        <input style={{ flex: 1, minWidth: 200 }} value={title} disabled={busy}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") saveTitle(); }} />
+        <button className="btn-primary btn-sm" disabled={busy || !title.trim() || title.trim() === ti.title}
+          onClick={saveTitle}>{t("common.save")}</button>
+        {ti.manual_title && (
+          <button className="btn-ghost btn-sm" disabled={busy} onClick={clearTitle}>
+            <IconRefresh width={15} height={15} /> {t("title.edit.removeOverride")}
+          </button>
+        )}
+      </div>
+
+      <label className="caption" style={{ display: "block", marginBottom: 4 }}>{t("title.edit.posterLabel")}</label>
+      <div className="row wrap" style={{ gap: 8, alignItems: "center" }}>
+        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPoster(f); e.target.value = ""; }} />
+        <button className="btn-ghost btn-sm" disabled={busy} onClick={() => fileRef.current?.click()}>
+          <IconPlus width={15} height={15} /> {ti.manual_poster ? t("title.edit.replacePoster") : t("title.edit.uploadPoster")}
+        </button>
+        {ti.manual_poster && (
+          <button className="btn-ghost btn-sm" disabled={busy} onClick={clearPoster}>
+            <IconRefresh width={15} height={15} /> {t("title.edit.removeOverride")}
+          </button>
+        )}
+      </div>
+      <p className="caption" style={{ marginTop: 10, marginBottom: 0 }}>{t("title.edit.hint")}</p>
+    </div>
+  );
+}
+
 export function TitleDetail() {
   const { id } = useParams();
   const { scope, can, toast, prefs } = useApp();
@@ -360,6 +439,7 @@ export function TitleDetail() {
   const { data: providers } = useFetch<any[]>(() => api.get("/providers"), []);
   const [enriching, setEnriching] = useState(false);
   const [syncingTrakt, setSyncingTrakt] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   // Expert-mode progress layer: fetch this title's persistent progress. Unlike
   // now-playing, /scrobble/progress keeps returning the last known position
@@ -479,7 +559,18 @@ export function TitleDetail() {
             {ti.poster ? <img src={ti.poster} alt={ti.title} /> : <div className="ph">{ti.title}</div>}
           </div>
           <div className="col" style={{ gap: 8 }}>
-            <h1 className="large-title">{ti.title}</h1>
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <h1 className="large-title" style={{ margin: 0 }}>{ti.title}</h1>
+              {canEdit && (
+                <button className="btn-ghost btn-sm" title={t("title.edit.heading")}
+                  aria-label={t("title.edit.heading")} onClick={() => setEditing((v) => !v)}>
+                  <IconPencil width={16} height={16} />
+                </button>
+              )}
+              {(ti.manual_title || ti.manual_poster) && (
+                <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{t("title.edit.badge")}</span>
+              )}
+            </div>
             <div className="row wrap" style={{ gap: 8 }}>
               <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{mediaBadge(t, ti)}</span>
               {ti.year && <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{ti.year}</span>}
@@ -504,6 +595,10 @@ export function TitleDetail() {
           </div>
         </div>
       </div>
+
+      {canEdit && editing && (
+        <TitleEditor ti={ti} onDone={() => { setEditing(false); reload(); }} />
+      )}
 
       {ti.overview && <p className="muted" style={{ margin: "20px 0" }}>{ti.overview}</p>}
 

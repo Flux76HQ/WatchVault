@@ -241,6 +241,8 @@ def title_detail(title_id: str):
         "tags": title_tags,
         "overview": overview, "overviews": overviews,
         "poster": poster_url(t["poster_path"]),
+        "manual_title": bool(t.get("manual_title")),
+        "manual_poster": bool(t.get("manual_poster")),
         "backdrop": poster_url(t["backdrop_path"], "w780"),
         "runtime_minutes": t["runtime_minutes"], "tmdb_id": t["tmdb_id"],
         "external_ids": t["external_ids"],
