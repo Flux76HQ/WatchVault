@@ -484,6 +484,13 @@ const en = {
   "tags.uses": "{n} uses",
   "tags.deleteConfirm": "Delete this tag? It is still used {n} times.",
 
+  // ── Unknown category ──
+  "dashboard.unknown": "Unknown",
+  "dashboard.blockUnknown": "Unknown",
+  "dashboard.unknownEmpty": "Nothing unidentified — every title has a recognized type.",
+  "dashboard.unknownViewAll": "View all",
+  "dashboard.unknownSeen": "Seen {count}x",
+
 };
 
 export type Dict = Record<string, string>;

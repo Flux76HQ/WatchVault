@@ -484,6 +484,13 @@ const nl = {
   "tags.uses": "{n} keer gebruikt",
   "tags.deleteConfirm": "Deze tag verwijderen? Hij wordt nog {n} keer gebruikt.",
 
+  // ── Unknown category ──
+  "dashboard.unknown": "Onbekend",
+  "dashboard.blockUnknown": "Onbekend",
+  "dashboard.unknownEmpty": "Niets ongeïdentificeerd — elke titel heeft een herkend type.",
+  "dashboard.unknownViewAll": "Alles bekijken",
+  "dashboard.unknownSeen": "{count}x gezien",
+
 };
 
 export type Dict = Record<string, string>;

@@ -535,3 +535,33 @@ def _unfinished_row(r) -> dict:
         "progress": progress,
         "last_activity": r["last_activity_at"].isoformat() if r["last_activity_at"] else None,
     }
+
+@bp.get("/unknown")
+@require_perm("catalog.read")
+def unknown_titles():
+    """All watched titles the scoped profile(s) have that could not be
+    identified as episodic series (no recognized season/episode). These are
+    gathered under the "Unknown" heading so they stop polluting the
+    "still to watch" tracker."""
+    ids = _ids()
+    if not ids:
+        return jsonify([])
+    rows = query_all(
+        f"SELECT t.id, t.title, t.kind, t.year, t.poster_path, t.tmdb_id, "
+        f"  count(*) AS events, "
+        f"  max(we.watched_date) AS last_watched, "
+        f"  COALESCE(sum({EFF_SECONDS}),0) AS seconds "
+        f"FROM watch_events we JOIN titles t ON t.id = we.title_id "
+        f"WHERE we.user_id = ANY(%s::uuid[]) AND we.deleted_at IS NULL "
+        f"  AND wv_title_is_unknown(t.id) "
+        f"GROUP BY t.id ORDER BY last_watched DESC NULLS LAST, t.title",
+        (ids,),
+    )
+    return jsonify([
+        {"id": str(r["id"]), "title": r["title"], "kind": r["kind"], "year": r["year"],
+         "poster": poster_url(r["poster_path"]), "matched": r["tmdb_id"] is not None,
+         "unknown": True, "events": int(r["events"]),
+         "last_watched": r["last_watched"].isoformat() if r["last_watched"] else None,
+         "hours": _hours(r["seconds"])}
+        for r in rows
+    ])
