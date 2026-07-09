@@ -7,6 +7,8 @@ import { useFetch } from "../lib/useFetch";
 import { Section } from "../components/ui";
 import { IconFilm, IconTv, IconClose, IconChevron } from "../components/icons";
 import { TagPill } from "../components/TagChips";
+import { AccountSecurity } from "../components/AccountSecurity";
+import { HouseholdMembers, HowMembersJoin } from "./Profiles";
 import { ACCENTS, fmtDate } from "../lib/format";
 
 function Appearance() {
@@ -80,13 +82,13 @@ function Appearance() {
   );
 }
 
-function Household() {
+function Household({ bare }: { bare?: boolean } = {}) {
   const { user, can, toast, refreshAuth } = useApp();
   const { t } = useT();
   const [name, setName] = useState(user?.household_name || "");
   if (!can("profiles.manage")) return null;
   return (
-    <Section title={t("settings.household")}>
+    <Section title={bare ? "" : t("settings.household")} bare={bare}>
       <div className="card">
         <label>{t("settings.householdName")}</label>
         <div className="row" style={{ gap: 10 }}>
@@ -157,11 +159,11 @@ function Plugins({ bare }: { bare?: boolean } = {}) {
   );
 }
 
-function Account() {
+function Account({ bare }: { bare?: boolean } = {}) {
   const { user, logout } = useApp();
   const { t } = useT();
   return (
-    <Section title={t("settings.account")}>
+    <Section title={bare ? "" : t("settings.account")} bare={bare}>
       <div className="card col" style={{ gap: 14 }}>
         <div className="row">
           <div className="col" style={{ gap: 2, flex: 1 }}>
@@ -348,7 +350,7 @@ function AttributionLog({ embedded }: { embedded?: boolean } = {}) {
   );
 }
 
-function DangerZone() {
+function DangerZone({ bare }: { bare?: boolean } = {}) {
   const { can, toast } = useApp();
   const { t } = useT();
   const [confirmText, setConfirmText] = useState("");
@@ -375,7 +377,7 @@ function DangerZone() {
   }
 
   return (
-    <Section title={t("settings.dangerZone")}>
+    <Section title={bare ? "" : t("settings.dangerZone")} bare={bare}>
       <div className="card col" style={{ gap: 14, borderColor: "var(--danger, #d4453a)" }}>
         <div className="col" style={{ gap: 4 }}>
           <strong>{t("settings.resetAll")}</strong>
@@ -657,11 +659,22 @@ export function Settings() {
       {tab === "logs" && <AttributionLog embedded />}
 
       {tab === "profile" && (
-        <>
-          <Account />
-          <Household />
-          <DangerZone />
-        </>
+        <div className="col" style={{ gap: 12 }}>
+          <Accordion title={t("settings.account")} defaultOpen>
+            <div className="col" style={{ gap: 18 }}>
+              <Account bare />
+              <AccountSecurity />
+            </div>
+          </Accordion>
+          {can("profiles.manage") && (
+            <Accordion title={t("settings.household")}><Household bare /></Accordion>
+          )}
+          <Accordion title={t("profiles.householdMembers")}><HouseholdMembers bare /></Accordion>
+          <Accordion title={t("profiles.howMembersJoin")}><HowMembersJoin bare /></Accordion>
+          {can("settings.manage") && (
+            <Accordion title={t("settings.dangerZone")}><DangerZone bare /></Accordion>
+          )}
+        </div>
       )}
     </>
   );
