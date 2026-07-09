@@ -5,7 +5,7 @@ import { LanguagePicker } from "./LanguagePicker";
 import { Dropdown } from "./Menu";
 import { initials } from "../lib/format";
 import {
-  IconChart, IconChevron, IconHome, IconImport, IconLogo, IconSearch, IconSettings, IconUsers,
+  IconChart, IconChevron, IconHome, IconImport, IconLogo, IconSearch, IconSettings,
 } from "./icons";
 
 function ProfileSwitcher() {
@@ -71,7 +71,6 @@ const NAV = [
   { to: "/overviews", key: "nav.overviews", icon: IconChart },
   { to: "/search", key: "nav.search", icon: IconSearch },
   { to: "/imports", key: "nav.imports", icon: IconImport },
-  { to: "/profiles", key: "nav.profiles", icon: IconUsers },
 ];
 
 export function Layout() {

@@ -1,15 +1,24 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useApp } from "../lib/app";
 import { useT } from "../lib/i18n";
 import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Loading, ErrorState, Section } from "../components/ui";
-import { AccountSecurity } from "../components/AccountSecurity";
-import { IconPlus, IconUsers, IconSettings, IconChevron, IconPencil } from "../components/icons";
+import { IconPlus, IconUsers, IconPencil } from "../components/icons";
 import { initials, fmtNum, fmtDate, ACCENTS } from "../lib/format";
 
+// Redirect the old standalone /profiles route to the Profile tab in Settings,
+// where household members, joining and account security now live.
 export function Profiles() {
+  return <Navigate to="/settings?tab=profile" replace />;
+}
+
+// Household member management (add / edit / remove profiles, recovery codes).
+// Rendered inside the Settings > Profile tab. When `bare`, the surrounding
+// accordion supplies the heading, so the section header is omitted and the
+// "add member" action moves into the body.
+export function HouseholdMembers({ bare }: { bare?: boolean } = {}) {
   const { user, can, toast, refreshProfiles } = useApp();
   const { t } = useT();
   const profiles = useFetch<any[]>(() => api.get("/profiles"), []);
@@ -118,12 +127,21 @@ export function Profiles() {
 
   return (
     <>
-      <Section title={t("profiles.householdMembers")}
-        right={can("profiles.manage") ? (
+      <Section title={bare ? "" : t("profiles.householdMembers")} bare={bare}
+        right={!bare && can("profiles.manage") ? (
           <button className="btn-ghost btn-sm" onClick={() => setAdding((a) => !a)}>
             <IconPlus width={16} height={16} /> {t("profiles.addMember")}
           </button>
         ) : undefined}>
+
+        {bare && can("profiles.manage") && (
+          <div className="row" style={{ marginBottom: 12 }}>
+            <div className="spacer" style={{ flex: 1 }} />
+            <button className="btn-ghost btn-sm" onClick={() => setAdding((a) => !a)}>
+              <IconPlus width={16} height={16} /> {t("profiles.addMember")}
+            </button>
+          </div>
+        )}
 
         {newCode && (
           <div className="card" style={{ marginBottom: 16, borderColor: "var(--accent)" }}>
@@ -230,31 +248,24 @@ export function Profiles() {
           ))}
         </div>
       </Section>
+    </>
+  );
+}
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="row">
-          <IconUsers width={20} height={20} />
-          <div className="col" style={{ gap: 2, flex: 1 }}>
-            <span className="headline">{t("profiles.howMembersJoin")}</span>
-            <span className="caption">
-              {t("profiles.howMembersJoinHelp")}
-            </span>
-          </div>
+// The "how members join" info card. Rendered inside the Settings > Profile tab.
+export function HowMembersJoin({ bare }: { bare?: boolean } = {}) {
+  const { t } = useT();
+  return (
+    <div className="card" style={{ marginTop: bare ? 0 : 20 }}>
+      <div className="row">
+        <IconUsers width={20} height={20} />
+        <div className="col" style={{ gap: 2, flex: 1 }}>
+          <span className="headline">{t("profiles.howMembersJoin")}</span>
+          <span className="caption">
+            {t("profiles.howMembersJoinHelp")}
+          </span>
         </div>
       </div>
-
-      <Link to="/settings" className="card nav-card mobile-only" style={{ marginTop: 20 }}>
-        <div className="row">
-          <IconSettings width={20} height={20} />
-          <div className="col" style={{ gap: 2, flex: 1 }}>
-            <span className="headline">{t("nav.settings")}</span>
-            <span className="caption">{t("profiles.openSettingsHelp")}</span>
-          </div>
-          <IconChevron width={18} height={18} />
-        </div>
-      </Link>
-
-      <AccountSecurity />
-    </>
+    </div>
   );
 }

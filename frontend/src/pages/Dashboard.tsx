@@ -19,8 +19,8 @@ type RecentRange = "week" | "month" | "year";
 // user (persisted in prefs.dashboard_layout, synced via /preferences). Blocks
 // marked `expert` only appear when Expert mode is on. Unknown/new ids in a saved
 // layout are ignored and new blocks are appended, so old layouts stay valid.
-type BlockId = "nowPlaying" | "unfinished" | "stats" | "trend" | "platforms" | "monthly";
-const DEFAULT_ORDER: BlockId[] = ["nowPlaying", "unfinished", "stats", "trend", "platforms", "monthly"];
+type BlockId = "nowPlaying" | "unfinished" | "unknown" | "stats" | "trend" | "platforms" | "monthly";
+const DEFAULT_ORDER: BlockId[] = ["nowPlaying", "unfinished", "unknown", "stats", "trend", "platforms", "monthly"];
 
 export function Dashboard() {
   const { scope, user, profiles, prefs, savePrefs } = useApp();
@@ -62,6 +62,7 @@ export function Dashboard() {
   const blocks: Record<BlockId, { labelKey: string; expert?: boolean; node: ReactNode }> = {
     nowPlaying: { labelKey: "dashboard.blockNowPlaying", expert: true, node: <NowPlaying scope={scope} /> },
     unfinished: { labelKey: "dashboard.blockUnfinished", expert: true, node: <UnfinishedTitles scope={scope} /> },
+    unknown: { labelKey: "dashboard.blockUnknown", node: <UnknownTitles scope={scope} /> },
     stats: {
       labelKey: "dashboard.blockStats",
       node: <StatsBlock s={s} editing={editing} />,
@@ -248,6 +249,32 @@ function UnfinishedTitles({ scope }: { scope: string }) {
             ))}
           </div>
         ) : <p className="muted">{t("dashboard.unfinishedEmpty")}</p>}
+    </Section>
+  );
+}
+
+// The "Unknown" bucket: titles that could not be identified as episodic series
+// (no recognized season/episode). Gathering them here keeps them out of the
+// "still to watch" tracker while still giving a place to find and manage them.
+function UnknownTitles({ scope }: { scope: string }) {
+  const { t } = useT();
+  const { data, loading, error, reload } = useFetch<any[]>(
+    () => api.get("/stats/unknown", { profile: scope }), [scope]);
+
+  return (
+    <Section title={t("dashboard.unknown")}
+      right={data && data.length ? <Link to="/search?kind=unknown" className="btn-ghost btn-sm">{t("dashboard.unknownViewAll")}</Link> : undefined}>
+      {loading ? <Loading /> : error ? <ErrorState error={error} retry={reload} /> :
+        data && data.length ? (
+          <div className="poster-grid">
+            {data.map((u: any) => (
+              <Poster key={u.id} to={`/title/${u.id}`} poster={u.poster} title={u.title} kind={u.kind}
+                enrichId={u.id}
+                subtitle={u.events > 1 ? t("dashboard.unknownSeen", { count: u.events }) : (u.year ? String(u.year) : "")}
+                badge={t("common.unknown")} />
+            ))}
+          </div>
+        ) : <p className="muted">{t("dashboard.unknownEmpty")}</p>}
     </Section>
   );
 }

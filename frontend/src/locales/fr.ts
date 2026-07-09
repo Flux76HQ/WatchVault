@@ -484,6 +484,13 @@ const fr = {
   "tags.uses": "{n} utilisations",
   "tags.deleteConfirm": "Supprimer cette étiquette ? Elle est encore utilisée {n} fois.",
 
+  // ── Unknown category ──
+  "dashboard.unknown": "Inconnu",
+  "dashboard.blockUnknown": "Inconnu",
+  "dashboard.unknownEmpty": "Rien de non identifié — chaque titre a un type reconnu.",
+  "dashboard.unknownViewAll": "Tout voir",
+  "dashboard.unknownSeen": "Vu {count}x",
+
 };
 
 export type Dict = Record<string, string>;
