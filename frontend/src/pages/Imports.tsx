@@ -84,7 +84,7 @@ function FileImport({ providers, onDone }: { providers: Provider[]; onDone: () =
 function Connections({ providers, connections, reload }: {
   providers: Provider[]; connections: any[]; reload: () => void;
 }) {
-  const { toast, can } = useApp();
+  const { toast, can, profiles } = useApp();
   const { t } = useT();
   const apiProviders = providers.filter((p) => p.ingest_type === "api");
   const [adding, setAdding] = useState(false);
@@ -100,6 +100,11 @@ function Connections({ providers, connections, reload }: {
   const [editBusy, setEditBusy] = useState(false);
   const [reauthId, setReauthId] = useState<string | null>(null);
   const [reauthSecret, setReauthSecret] = useState("");
+  // Account→profile mapping panel (attribute synced history per source user).
+  const [mappingId, setMappingId] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<{ id: string; name: string; user_id: string | null }[] | null>(null);
+  const [accountSource, setAccountSource] = useState<string>("");
+  const [accountBusy, setAccountBusy] = useState(false);
   // Active Trakt device-flow session (one at a time). target is "add" or a conn id.
   const [device, setDevice] = useState<{
     device_code: string; user_code: string; verification_url: string;
@@ -115,6 +120,32 @@ function Connections({ providers, connections, reload }: {
   function providerSupportsTrakt(key: string) {
     return (apiProviders.find((p) => p.key === key)?.config_fields || [])
       .some((f) => f.type === "trakt_oauth");
+  }
+
+  // Providers whose server has multiple users we can attribute per-event.
+  function providerSupportsAccounts(key: string) {
+    return key === "plex";
+  }
+
+  async function openAccounts(c: any) {
+    setMappingId(c.id); setAccounts(null); setAccountSource(""); setAccountBusy(true);
+    try {
+      const res = await api.get(`/connections/${c.id}/accounts`);
+      setAccounts(res.accounts || []);
+      setAccountSource(res.source || "");
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("imports.couldNotLoadAccounts"), "err");
+      setMappingId(null);
+    } finally { setAccountBusy(false); }
+  }
+
+  async function mapAccount(account_label: string, user_id: string) {
+    try {
+      await api.put("/scrobble/account-map", { source: accountSource, account_label, user_id });
+      setAccounts((a) => a?.map((x) => x.name === account_label ? { ...x, user_id: user_id || null } : x) || a);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t("settings.failed"), "err");
+    }
   }
 
   // Poll the Trakt device flow until the user approves it (or it expires).
@@ -428,6 +459,12 @@ function Connections({ providers, connections, reload }: {
                         {t("imports.editLibraries")}
                       </button>
                     )}
+                    {providerSupportsAccounts(c.provider_key) && (
+                      <button className="btn-ghost btn-sm" disabled={accountBusy && mappingId === c.id}
+                        onClick={() => (mappingId === c.id ? setMappingId(null) : openAccounts(c))}>
+                        {t("imports.mapAccounts")}
+                      </button>
+                    )}
                     {providerSupportsTrakt(c.provider_key) && (
                       <button className="btn-ghost btn-sm"
                         onClick={() => { setReauthId(reauthId === c.id ? null : c.id); setDevice(null); setReauthSecret(""); }}>
@@ -469,6 +506,37 @@ function Connections({ providers, connections, reload }: {
                     </button>
                     <button className="btn-ghost btn-sm" onClick={() => setEditing(null)}>{t("common.cancel")}</button>
                     <span className="caption">{t("imports.librariesSelected", { selected: editSel.length, total: editLibs?.length || 0 })}</span>
+                  </div>
+                </div>
+              )}
+              {mappingId === c.id && (
+                <div className="card" style={{ margin: "0 0 12px", background: "var(--bg)" }}>
+                  <label>{t("imports.mapAccountsTitle")}</label>
+                  <p className="caption" style={{ marginBottom: 10 }}>{t("imports.mapAccountsHelp")}</p>
+                  {accountBusy && !accounts ? (
+                    <span className="caption">{t("imports.loadingShort")}</span>
+                  ) : accounts && accounts.length > 0 ? (
+                    <div className="col" style={{ gap: 8 }}>
+                      {accounts.map((acc) => (
+                        <div key={acc.id || acc.name} className="list-row">
+                          <div className="col" style={{ flex: 1, gap: 2 }}>
+                            <strong>{acc.name}</strong>
+                          </div>
+                          <select value={acc.user_id || ""} onChange={(e) => mapAccount(acc.name, e.target.value)}
+                            style={{ width: "auto", minWidth: 160 }}>
+                            <option value="">{t("imports.attributeToOwner")}</option>
+                            {profiles.map((p) => (
+                              <option key={p.id} value={p.id}>{p.display_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="caption">{t("imports.noAccountsFound")}</p>
+                  )}
+                  <div className="row" style={{ gap: 8, marginTop: 10 }}>
+                    <button className="btn-ghost btn-sm" onClick={() => setMappingId(null)}>{t("common.close")}</button>
                   </div>
                 </div>
               )}

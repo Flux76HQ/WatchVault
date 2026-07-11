@@ -9,7 +9,8 @@ from flask import Blueprint, jsonify, request
 from ..db import connection, execute, query_all, query_one
 from ..ingest import (ingest_events, prune_connection_libraries,
                       clear_connection_events, reset_all_data,
-                      ingest_title_from_trakt, enqueue_trakt_title_syncs,
+                      ingest_events_by_profile,
+                      ingest_title_from_trakt,
                       add_manual_movie, add_manual_episode, add_manual_season,
                       delete_episode_watch, delete_movie_watch, delete_title)
 from ..ingest.adapters import get_adapter
@@ -144,6 +145,39 @@ def connection_libraries(conn_id: str):
     if isinstance(selected, str):
         selected = [selected]
     return jsonify({"libraries": libraries, "selected": [str(s) for s in selected]})
+
+
+@bp.get("/connections/<conn_id>/accounts")
+@require_perm("ingest.write")
+def connection_accounts(conn_id: str):
+    """List the source accounts (Plex users) for a connection plus the current
+    account→profile mapping, so the edit UI can attribute synced history per user.
+    The mapping is stored in scrobble_account_map (shared with live scrobbling)."""
+    user = current_user()
+    conn = query_one(
+        "SELECT sc.config, p.adapter, p.key AS provider_key FROM source_connections sc "
+        "JOIN providers p ON p.id = sc.provider_id "
+        "WHERE sc.id = %s AND sc.household_id = %s",
+        (conn_id, user["household_id"]),
+    )
+    if not conn:
+        return jsonify({"error": "not found"}), 404
+    try:
+        accounts = get_adapter(conn["adapter"]).list_accounts(conn["config"] or {})
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"could not load accounts: {exc}"}), 400
+    rows = query_all(
+        "SELECT account_label, user_id FROM scrobble_account_map "
+        "WHERE household_id = %s AND source = %s",
+        (user["household_id"], conn["provider_key"]),
+    )
+    mapping = {r["account_label"]: str(r["user_id"]) for r in rows}
+    return jsonify({
+        "source": conn["provider_key"],
+        "accounts": [{"id": a.get("id"), "name": a.get("name"),
+                      "user_id": mapping.get(a.get("name"))}
+                     for a in accounts],
+    })
 
 
 @bp.post("/connections/libraries")
@@ -342,7 +376,8 @@ def trakt_authorize_existing(conn_id: str):
 def sync_connection(conn_id: str):
     user = current_user()
     conn = query_one(
-        "SELECT sc.*, p.adapter, p.id AS provider_id FROM source_connections sc "
+        "SELECT sc.*, p.adapter, p.key AS provider_key, p.id AS provider_id "
+        "FROM source_connections sc "
         "JOIN providers p ON p.id = sc.provider_id "
         "WHERE sc.id = %s AND sc.household_id = %s",
         (conn_id, user["household_id"]),
@@ -365,16 +400,14 @@ def sync_connection(conn_id: str):
                 (f"error: {exc}", conn_id))
         return jsonify({"error": f"sync failed: {exc}"}), 400
 
-    summary = ingest_events(target, str(conn["provider_id"]), conn_id, events) if events else \
-        {"inserted": 0, "duplicates": 0, "titles_created": 0}
+    # Attribute each event to the profile that watched it (Plex user -> profile via
+    # scrobble_account_map); unmapped/label-less events fall back to `target`.
+    summary = ingest_events_by_profile(
+        str(user["household_id"]), conn["provider_key"], str(conn["provider_id"]),
+        conn_id, target, events, is_trakt=conn["adapter"] == "trakt_api")
     spec = adapter.library_prune_spec(config)
     if spec:
         summary["pruned"] = prune_connection_libraries(conn_id, spec[0], spec[1])
-    # After a self-hosted (non-Trakt) sync, cross-check each touched series with
-    # Trakt for episodes this source didn't know about.
-    if conn["adapter"] != "trakt_api":
-        enqueue_trakt_title_syncs(str(user["household_id"]), target,
-                                  summary.get("series_title_ids"))
     execute(
         "UPDATE source_connections SET cursor = %s, last_status = %s, last_sync_at = now() WHERE id = %s",
         (json.dumps(new_cursor), f"ok: +{summary['inserted']}", conn_id),

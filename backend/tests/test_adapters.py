@@ -306,6 +306,104 @@ def test_plex_unknown_account_raises(monkeypatch):
             {"base_url": "http://x", "token": "t", "account_id": "nobody"}, {})
 
 
+def _plex_get_stub(accounts_xml, history_xml):
+    def fake_get(url, params=None, headers=None, timeout=None):
+        if url.endswith("/accounts"):
+            return _FakeResp(content=accounts_xml)
+        if url.endswith("/history/all"):
+            return _FakeResp(content=history_xml)
+        # per-title metadata calls: benign empty container
+        return _FakeResp(content=b'<MediaContainer/>')
+    return fake_get
+
+
+def test_plex_attributes_events_to_account_label(monkeypatch):
+    from app.ingest.adapters import plex
+    accounts_xml = (b'<MediaContainer>'
+                    b'<Account id="1" name="Alice"/>'
+                    b'<Account id="2" name="Bob"/>'
+                    b'</MediaContainer>')
+    history_xml = (
+        b'<MediaContainer>'
+        b'<Video type="movie" title="Alice Movie" year="2024" viewedAt="100" '
+        b'duration="6000000" ratingKey="a" accountID="1"/>'
+        b'<Video type="episode" grandparentTitle="Bob Show" parentIndex="1" index="2" '
+        b'title="Ep" viewedAt="101" duration="6000000" ratingKey="b" '
+        b'grandparentRatingKey="g" accountID="2"/>'
+        # accountID with no matching /accounts entry -> numeric fallback label
+        b'<Video type="movie" title="Ghost Movie" viewedAt="102" '
+        b'duration="6000000" ratingKey="c" accountID="99"/>'
+        b'</MediaContainer>'
+    )
+    monkeypatch.setattr(plex.requests, "get",
+                        _plex_get_stub(accounts_xml, history_xml))
+    events, _ = plex.PlexAdapter().fetch_history(
+        {"base_url": "http://x", "token": "t"}, {})
+    by_title = {e.clean_title: e for e in events}
+    assert by_title["Alice Movie"].account_label == "Alice"
+    assert by_title["Alice Movie"].raw["accountID"] == "1"
+    assert by_title["Bob Show"].account_label == "Bob"
+    # Unknown account id degrades to the numeric id as the label, never crashes.
+    assert by_title["Ghost Movie"].account_label == "99"
+
+
+def test_plex_account_names_failure_degrades_to_numeric(monkeypatch):
+    from app.ingest.adapters import plex
+    history_xml = (b'<MediaContainer>'
+                   b'<Video type="movie" title="M" year="2024" viewedAt="100" '
+                   b'duration="6000000" ratingKey="a" accountID="7"/>'
+                   b'</MediaContainer>')
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        if url.endswith("/accounts"):
+            raise RuntimeError("boom")
+        if url.endswith("/history/all"):
+            return _FakeResp(content=history_xml)
+        return _FakeResp(content=b'<MediaContainer/>')
+
+    monkeypatch.setattr(plex.requests, "get", fake_get)
+    events, _ = plex.PlexAdapter().fetch_history(
+        {"base_url": "http://x", "token": "t"}, {})
+    assert events[0].account_label == "7"
+
+
+def test_plex_list_accounts(monkeypatch):
+    from app.ingest.adapters import plex
+    accounts_xml = (b'<MediaContainer>'
+                    b'<Account id="1" name="Alice"/>'
+                    b'<Account id="2" name="Bob"/>'
+                    b'</MediaContainer>')
+    monkeypatch.setattr(plex.requests, "get",
+                        lambda *a, **k: _FakeResp(content=accounts_xml))
+    accounts = plex.PlexAdapter().list_accounts({"base_url": "http://x", "token": "t"})
+    assert {a["name"] for a in accounts} == {"Alice", "Bob"}
+    assert {a["id"] for a in accounts} == {"1", "2"}
+
+
+def test_route_events_by_profile(monkeypatch):
+    from app.ingest import normalize
+    from app.ingest.models import NormalizedEvent
+    import datetime as dt
+
+    def fake_query_all(sql, params):
+        return [{"account_label": "Alice", "user_id": "u-alice"},
+                {"account_label": "Bob", "user_id": "u-bob"}]
+
+    monkeypatch.setattr(normalize, "query_all", fake_query_all)
+    now = dt.datetime(2024, 1, 1, tzinfo=dt.timezone.utc)
+    events = [
+        NormalizedEvent(raw_title="A", watched_at=now, account_label="Alice"),
+        NormalizedEvent(raw_title="B", watched_at=now, account_label="Bob"),
+        NormalizedEvent(raw_title="C", watched_at=now, account_label="Carol"),  # unmapped
+        NormalizedEvent(raw_title="D", watched_at=now, account_label=None),      # no label
+    ]
+    groups = normalize.route_events_by_profile("hh", "plex", events, "u-owner")
+    assert {e.raw_title for e in groups["u-alice"]} == {"A"}
+    assert {e.raw_title for e in groups["u-bob"]} == {"B"}
+    # Unmapped account and label-less events both fall back to the owner.
+    assert {e.raw_title for e in groups["u-owner"]} == {"C", "D"}
+
+
 def test_trakt_uses_sync_history_with_token(monkeypatch):
     from app.ingest.adapters import trakt
     seen = {}

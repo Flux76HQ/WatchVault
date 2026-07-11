@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from ..db import connection, query_one
+from ..db import connection, query_all, query_one
 from ..util import dedup_hash, normalize_text, title_key
 from ..catalog import apply_title_details
 from .models import NormalizedEvent
@@ -102,6 +102,73 @@ def ingest_events(user_id: str, provider_id: str, source_connection_id: str | No
         return _ingest_events(user_id, provider_id, source_connection_id, events, cur)
     with connection() as conn, conn.cursor() as cur:
         return _ingest_events(user_id, provider_id, source_connection_id, events, cur)
+
+
+def route_events_by_profile(household_id: str, source: str,
+                            events: Iterable[NormalizedEvent],
+                            default_user_id: str) -> dict[str, list[NormalizedEvent]]:
+    """Group events by the household profile that should own them.
+
+    Each event's ``account_label`` (e.g. the Plex user that watched it) is looked
+    up in ``scrobble_account_map`` — the same table the live-scrobble path uses — so
+    one mapping drives both routes. Events with no label, or a label that isn't
+    mapped, fall back to ``default_user_id`` (the connection owner), so nothing is
+    ever dropped. Adapters without a per-account concept leave ``account_label``
+    None, so every event routes to the default — behaviour identical to before."""
+    rows = query_all(
+        "SELECT account_label, user_id FROM scrobble_account_map "
+        "WHERE household_id = %s AND source = %s",
+        (household_id, source),
+    )
+    label_to_user = {r["account_label"]: str(r["user_id"]) for r in rows}
+    groups: dict[str, list[NormalizedEvent]] = {}
+    for ev in events:
+        uid = label_to_user.get(ev.account_label) if ev.account_label else None
+        groups.setdefault(uid or default_user_id, []).append(ev)
+    return groups
+
+
+def ingest_events_by_profile(household_id: str, source: str, provider_id: str,
+                             connection_id: str | None, default_user_id: str,
+                             events, *, is_trakt: bool = False) -> dict:
+    """Route a connection's fetched events to the right profiles and ingest each
+    group under its own ``user_id``. Shared by the manual-sync API and the
+    background sync worker so both attribute per Plex user identically.
+
+    For non-Trakt sources, each profile's freshly-touched series are queued for a
+    Trakt cross-sync under that same profile (mirrors the old single-target call).
+    Returns a merged summary for the whole connection."""
+    events = list(events)
+    empty = {"inserted": 0, "duplicates": 0, "titles_created": 0,
+             "titles_touched": 0, "series_title_ids": []}
+    if not events:
+        return empty
+    groups = route_events_by_profile(household_id, source, events, default_user_id)
+    summaries: list[dict] = []
+    for uid, evs in groups.items():
+        s = ingest_events(uid, provider_id, connection_id, evs)
+        summaries.append(s)
+        if not is_trakt:
+            from .trakt_sync import enqueue_trakt_title_syncs
+            enqueue_trakt_title_syncs(household_id, uid, s.get("series_title_ids"))
+    return merge_ingest_summaries(summaries) if summaries else empty
+
+
+def merge_ingest_summaries(summaries: Iterable[dict]) -> dict:
+    """Combine per-profile ``ingest_events`` summaries into one connection summary."""
+    merged = {"inserted": 0, "duplicates": 0, "titles_created": 0,
+              "titles_touched": 0, "series_title_ids": []}
+    seen_series: set[str] = set()
+    for s in summaries:
+        merged["inserted"] += s.get("inserted", 0)
+        merged["duplicates"] += s.get("duplicates", 0)
+        merged["titles_created"] += s.get("titles_created", 0)
+        merged["titles_touched"] += s.get("titles_touched", 0)
+        for tid in s.get("series_title_ids", []):
+            if tid not in seen_series:
+                seen_series.add(tid)
+                merged["series_title_ids"].append(tid)
+    return merged
 
 
 def _ingest_events(user_id: str, provider_id: str, source_connection_id: str | None,
