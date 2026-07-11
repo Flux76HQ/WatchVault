@@ -45,6 +45,15 @@ class SourceAdapter:
         """
         return []
 
+    def list_accounts(self, config: dict) -> list[dict]:
+        """Discover the source accounts (users) that can be attributed per event.
+
+        Returns ``[{"id": str, "name": str}]``. Used to let the household map each
+        source account to a WatchVault profile. Adapters whose source has no
+        multi-account concept keep the default (none).
+        """
+        return []
+
     def library_prune_spec(self, config: dict) -> tuple[str, set[str]] | None:
         """Describe how to prune watch events to the selected library subset.
 

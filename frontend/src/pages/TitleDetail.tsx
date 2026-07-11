@@ -476,8 +476,8 @@ export function TitleDetail() {
   // after playback stops, so a partly-watched film/episode shows where you left
   // off right on the title page.
   const { data: liveRaw, refresh: refreshLive } = useFetch<any[]>(
-    () => (prefs.expert ? api.get("/scrobble/progress", { title_id: id }) : Promise.resolve([])),
-    [prefs.expert, id]);
+    () => (prefs.expert ? api.get("/scrobble/progress", { title_id: id, profile: scope }) : Promise.resolve([])),
+    [prefs.expert, id, scope]);
   useEffect(() => {
     if (!prefs.expert) return;
     const iv = setInterval(() => { refreshLive(); }, 5000);

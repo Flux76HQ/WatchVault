@@ -41,6 +41,20 @@ def _push_user():
     return user
 
 
+def _live_scope(user) -> str | None:
+    """Which profile's live activity the requester may see. Live viewing is
+    private: in the combined view (`?profile=` empty/'all') you only see your own
+    sessions; a specific `?profile=<uid>` shows that profile. Returns the user_id
+    to filter on, or None when the requested profile is outside the household (so
+    the caller returns an empty result)."""
+    profile = (request.args.get("profile") or "").strip()
+    if not profile or profile in ("all", "household"):
+        return str(user["id"])
+    if str(profile) in [str(u) for u in household_user_ids()]:
+        return str(profile)
+    return None
+
+
 def _commit_threshold() -> float:
     row = query_one("SELECT data->>'scrobble_commit_threshold' AS t FROM app_settings WHERE id = 1")
     try:
@@ -93,6 +107,9 @@ def generic_scrobble():
 @require_perm("ingest.write")
 def now_playing():
     user = current_user()
+    scope = _live_scope(user)
+    if scope is None:
+        return jsonify([])
     rows = query_all(
         "SELECT s.*, u.display_name AS profile_name, p.name AS provider_name, "
         "       p.key AS provider_key, p.color AS provider_color, t.poster_path "
@@ -100,14 +117,14 @@ def now_playing():
         "LEFT JOIN users u ON u.id = s.user_id "
         "LEFT JOIN providers p ON p.id = s.provider_id "
         "LEFT JOIN titles t ON t.id = s.title_id "
-        "WHERE s.household_id = %s AND s.state <> 'stopped' "
+        "WHERE s.household_id = %s AND s.user_id = %s AND s.state <> 'stopped' "
         # Hide a session that has been paused for more than 10 minutes: a `pause`
         # event refreshes updated_at, so an old updated_at while state='paused'
         # means it's been idle-on-pause too long. A later `resume` brings it back.
         "AND NOT (s.state = 'paused' "
         "         AND s.updated_at < now() - interval '10 minutes') "
         "ORDER BY s.updated_at DESC",
-        (user["household_id"],),
+        (user["household_id"], scope),
     )
     return jsonify([
         {
@@ -261,9 +278,13 @@ def title_progress():
     never committed to a finished watch_event are returned (a finished play has
     ``committed_at`` set and is not 'in progress')."""
     user = current_user()
+    scope = _live_scope(user)
+    if scope is None:
+        return jsonify([])
     title_id = (request.args.get("title_id") or "").strip() or None
-    params: list = [user["household_id"]]
-    where = "s.household_id = %s AND s.committed_at IS NULL AND s.title_id IS NOT NULL"
+    params: list = [user["household_id"], scope]
+    where = ("s.household_id = %s AND s.user_id = %s "
+             "AND s.committed_at IS NULL AND s.title_id IS NOT NULL")
     if title_id:
         where += " AND s.title_id = %s"
         params.append(title_id)

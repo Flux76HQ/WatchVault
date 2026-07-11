@@ -345,7 +345,7 @@ function NowPlaying({ scope }: { scope: string }) {
   const { t } = useT();
   const navigate = useNavigate();
   const [picker, setPicker] = useState<any | null>(null);
-  const { data, refresh } = useFetch<any[]>(() => api.get("/scrobble/now-playing"), []);
+  const { data, refresh } = useFetch<any[]>(() => api.get("/scrobble/now-playing", { profile: scope }), [scope]);
 
   useEffect(() => {
     if (!prefs.expert) return;

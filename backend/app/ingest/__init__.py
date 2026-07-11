@@ -1,7 +1,9 @@
 """Ingestion package: provider adapters + normalization into the central model."""
 from .models import NormalizedEvent
 from .normalize import (ingest_events, prune_connection_libraries,
-                        clear_connection_events, reset_all_data)
+                        clear_connection_events, reset_all_data,
+                        route_events_by_profile, merge_ingest_summaries,
+                        ingest_events_by_profile)
 from .trakt_sync import (find_trakt_connection, trakt_configured,
                          ingest_title_from_trakt, enqueue_trakt_title_syncs)
 from .manual import (add_manual_movie, add_manual_episode, add_manual_season,
@@ -13,6 +15,8 @@ from .progress import (recompute_title_progress,
 
 __all__ = ["NormalizedEvent", "ingest_events", "prune_connection_libraries",
            "clear_connection_events", "reset_all_data",
+           "route_events_by_profile", "merge_ingest_summaries",
+           "ingest_events_by_profile",
            "find_trakt_connection", "trakt_configured",
            "ingest_title_from_trakt", "enqueue_trakt_title_syncs",
            "add_manual_movie", "add_manual_episode", "add_manual_season",

@@ -76,11 +76,12 @@ def _handle(job) -> dict:
 
 
 def _run_sync(connection_id: str) -> dict:
-    from app.ingest import ingest_events, prune_connection_libraries, enqueue_trakt_title_syncs
+    from app.ingest import ingest_events_by_profile, prune_connection_libraries
     from app.ingest.adapters import get_adapter
     from app.db import query_one, execute
     conn = query_one(
-        "SELECT sc.*, p.adapter, p.id AS provider_id FROM source_connections sc "
+        "SELECT sc.*, p.adapter, p.key AS provider_key, p.id AS provider_id "
+        "FROM source_connections sc "
         "JOIN providers p ON p.id = sc.provider_id WHERE sc.id = %s AND sc.enabled",
         (connection_id,),
     )
@@ -97,23 +98,21 @@ def _run_sync(connection_id: str) -> dict:
                 (json.dumps(new_config), connection_id))
         config = new_config
     events, cursor = adapter.fetch_history(config, conn["cursor"] or {})
-    summary = ingest_events(str(owner["id"]), str(conn["provider_id"]), connection_id, events) \
-        if events else {"inserted": 0}
+    # Attribute each event to the profile that watched it (Plex user -> profile via
+    # scrobble_account_map); unmapped/label-less events fall back to the owner. This
+    # also enqueues the per-profile Trakt cross-sync for non-Trakt sources.
+    summary = ingest_events_by_profile(
+        str(conn["household_id"]), conn["provider_key"], str(conn["provider_id"]),
+        connection_id, str(owner["id"]), events,
+        is_trakt=conn["adapter"] == "trakt_api")
     spec = adapter.library_prune_spec(config)
     if spec:
         summary["pruned"] = prune_connection_libraries(connection_id, spec[0], spec[1])
-    # After a self-hosted (non-Trakt) sync, cross-check each touched series with
-    # Trakt for episodes this source didn't know about, and re-attribute existing
-    # Trakt events so they adopt the platform this real sync just established
-    # (films included — the cross-sync only covers series).
-    if conn["adapter"] != "trakt_api":
-        enqueue_trakt_title_syncs(str(conn["household_id"]), str(owner["id"]),
-                                  summary.get("series_title_ids"))
-        if summary.get("inserted"):
-            _enqueue_reattribute_trakt_all()
-    elif summary.get("inserted"):
-        # A bulk Trakt sync may have added events to already-enriched titles;
-        # re-attribute them to their real streaming service.
+    # Whenever this sync added events, re-attribute existing Trakt events so they
+    # adopt the platform it just established (a self-hosted sync establishes the
+    # real streaming service; a bulk Trakt sync may touch already-enriched titles).
+    # The per-profile Trakt cross-sync for series is enqueued inside the helper.
+    if summary.get("inserted"):
         _enqueue_reattribute_trakt_all()
     execute("UPDATE source_connections SET cursor=%s, last_status=%s, last_sync_at=now() WHERE id=%s",
             (json.dumps(cursor), f"ok: +{summary.get('inserted', 0)}", connection_id))

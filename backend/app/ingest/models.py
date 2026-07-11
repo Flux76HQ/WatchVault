@@ -22,6 +22,11 @@ class NormalizedEvent:
     completed: bool = False
     tmdb_id: Optional[int] = None
     external_ids: dict = field(default_factory=dict)
+    # The source-account that watched this event (e.g. the Plex user name).
+    # Adapters that can attribute per account fill this; it is mapped to a
+    # household profile at ingest time via scrobble_account_map. Left None by
+    # adapters with no per-account concept (Netflix, generic, …).
+    account_label: Optional[str] = None
     raw: dict = field(default_factory=dict)
     # Source-native metadata captured during ingest (overview/genres/cast/crew/
     # runtime_minutes/original_title). Applied to the title, filling gaps only;

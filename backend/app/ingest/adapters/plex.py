@@ -43,6 +43,36 @@ class PlexAdapter(SourceAdapter):
         sections = self._section_id(config)
         return ("librarySectionID", sections) if sections else None
 
+    def _fetch_accounts(self, base: str, token: str) -> list[dict]:
+        """Raw account list from Plex: ``[{"id": str, "name": str}]``. Raises on a
+        failed request so callers that need it (the account_id filter) surface the
+        error; best-effort callers wrap this in try/except."""
+        resp = requests.get(f"{base}/accounts", params={"X-Plex-Token": token},
+                            timeout=20, headers={"Accept": "application/xml"})
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+        return [{"id": acc.get("id"), "name": acc.get("name", "")}
+                for acc in root.findall("Account")]
+
+    def _account_names(self, base: str, token: str) -> dict[str, str]:
+        """Map numeric ``accountID`` -> account name (the same string the Plex
+        webhook sends as ``Account.title``), so batch-sync events carry the same
+        label the live-scrobble mapping uses. Best-effort: on any failure returns
+        an empty map and callers fall back to the numeric id as the label."""
+        try:
+            return {a["id"]: a["name"] for a in self._fetch_accounts(base, token)
+                    if a.get("id")}
+        except Exception:  # noqa: BLE001 — best-effort, never break a sync
+            return {}
+
+    def list_accounts(self, config: dict) -> list[dict]:
+        base = (config.get("base_url") or "").rstrip("/")
+        token = config.get("token")
+        if not base or not token:
+            raise ValueError("Plex connection requires base_url and token")
+        return [{"id": a["id"], "name": a["name"]}
+                for a in self._fetch_accounts(base, token) if a.get("id")]
+
     def _resolve_account_id(self, base: str, token: str, account_id):
         """Plex's history ``accountID`` filter must be numeric. Users often enter a
         username instead, which makes the server answer 400. When a non-numeric value
@@ -52,16 +82,11 @@ class PlexAdapter(SourceAdapter):
         account_id = str(account_id).strip()
         if not account_id or account_id.isdigit():
             return account_id or None
-        resp = requests.get(f"{base}/accounts", params={"X-Plex-Token": token},
-                            timeout=20, headers={"Accept": "application/xml"})
-        resp.raise_for_status()
-        root = ET.fromstring(resp.content)
-        names = []
-        for acc in root.findall("Account"):
-            name = acc.get("name", "")
-            names.append(name)
-            if name.lower() == account_id.lower():
-                return acc.get("id")
+        accounts = self._fetch_accounts(base, token)
+        for acc in accounts:
+            if acc["name"].lower() == account_id.lower():
+                return acc["id"]
+        names = [a["name"] for a in accounts]
         raise ValueError(
             f"Plex account '{account_id}' not found. Use a numeric account ID or one of: "
             f"{', '.join(n for n in names if n) or '(none)'}")
@@ -105,6 +130,9 @@ class PlexAdapter(SourceAdapter):
         resp.raise_for_status()
         root = ET.fromstring(resp.content)
 
+        # id -> account name, resolved once, so each event carries the Plex user
+        # that watched it (mapped to a profile at ingest). Best-effort.
+        account_names = self._account_names(base, token)
         meta_cache: dict[str, dict] = {}
         events: list[NormalizedEvent] = []
         max_viewed = since
@@ -120,6 +148,8 @@ class PlexAdapter(SourceAdapter):
             watched = dt.datetime.fromtimestamp(viewed_at, tz=dt.timezone.utc)
             duration_ms = video.get("duration")
             duration_s = int(int(duration_ms) / 1000) if duration_ms else None
+            acct_id = video.get("accountID")
+            acct_label = account_names.get(acct_id) or acct_id or None
             if vtype == "episode":
                 meta_key = video.get("grandparentRatingKey")
                 events.append(NormalizedEvent(
@@ -130,9 +160,10 @@ class PlexAdapter(SourceAdapter):
                     episode=_int(video.get("index")),
                     episode_name=video.get("title"),
                     duration_seconds=duration_s, completed=True,
+                    account_label=acct_label,
                     metadata=self._title_metadata(base, token, meta_key, meta_cache, "series"),
                     raw={"source": "plex", "ratingKey": video.get("ratingKey"),
-                         "librarySectionID": section},
+                         "librarySectionID": section, "accountID": acct_id},
                 ))
             else:
                 events.append(NormalizedEvent(
@@ -141,9 +172,10 @@ class PlexAdapter(SourceAdapter):
                     clean_title=video.get("title", ""),
                     year=_int(video.get("year")),
                     duration_seconds=duration_s, completed=True,
+                    account_label=acct_label,
                     metadata=self._title_metadata(base, token, video.get("ratingKey"), meta_cache, "movie"),
                     raw={"source": "plex", "ratingKey": video.get("ratingKey"),
-                         "librarySectionID": section},
+                         "librarySectionID": section, "accountID": acct_id},
                 ))
         return events, {"since": max_viewed}
 
