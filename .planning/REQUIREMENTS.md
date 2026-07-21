@@ -16,12 +16,12 @@
 
 ### Delivery Safeguards
 
-- [ ] **DELV-01**: Maintainer can identify one canonical SemVer project version used consistently by the application, build, image metadata, and release tag
-- [ ] **DELV-02**: Contributor receives a blocking CI error with the exact remediation command when protected runtime, build, deploy, script, or workflow paths change without a required version bump
-- [ ] **DELV-03**: Contributor can run an idempotent helper that bumps the project version only when the protected-path policy requires it
-- [ ] **DELV-04**: Contributor gets fast pre-commit enforcement through a repository-configured `core.hooksPath`, while heavyweight checks remain in CI
-- [ ] **DELV-05**: Maintainer can review a capability inventory mapping every existing route, action, permission, scope, preference, locale, theme, and important UI state to redesign acceptance coverage
-- [ ] **DELV-06**: CI runs the existing backend suite plus frontend type, component, accessibility, visual, and critical-journey regression checks required by changed surfaces
+- [x] **DELV-01**: Maintainer can identify one canonical SemVer project version used consistently by the application, build, image metadata, and release tag
+- [x] **DELV-02**: Contributor receives a blocking CI error with the exact remediation command when protected runtime, build, deploy, script, or workflow paths change without a required version bump
+- [x] **DELV-03**: Contributor can run an idempotent helper that bumps the project version only when the protected-path policy requires it
+- [x] **DELV-04**: Contributor gets fast pre-commit enforcement through a repository-configured `core.hooksPath`, while heavyweight checks remain in CI
+- [x] **DELV-05**: Maintainer can review a capability inventory mapping every existing route, action, permission, scope, preference, locale, theme, and important UI state to redesign acceptance coverage
+- [x] **DELV-06**: CI runs the existing backend suite plus frontend type, component, accessibility, visual, and critical-journey regression checks required by changed surfaces
 
 ### Design System
 
@@ -151,12 +151,12 @@ Deferred beyond the redesign milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DELV-01 | Phase 1 | Pending |
-| DELV-02 | Phase 1 | Pending |
-| DELV-03 | Phase 1 | Pending |
-| DELV-04 | Phase 1 | Pending |
-| DELV-05 | Phase 1 | Pending |
-| DELV-06 | Phase 1 | Pending |
+| DELV-01 | Phase 1 | Complete |
+| DELV-02 | Phase 1 | Complete |
+| DELV-03 | Phase 1 | Complete |
+| DELV-04 | Phase 1 | Complete |
+| DELV-05 | Phase 1 | Complete |
+| DELV-06 | Phase 1 | Complete |
 | DSYS-01 | Phase 3 | Pending |
 | DSYS-02 | Phase 3 | Pending |
 | DSYS-03 | Phase 3 | Pending |

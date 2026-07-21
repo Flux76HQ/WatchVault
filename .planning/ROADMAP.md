@@ -13,7 +13,7 @@ WatchVault's redesign proceeds through nine dependency-driven phases. Delivery s
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Delivery Safeguards and Behavioral Baseline** - Make redesign changes measurable, versioned, and protected against capability regressions.
+- [x] **Phase 1: Delivery Safeguards and Behavioral Baseline** - Make redesign changes measurable, versioned, and protected against capability regressions.
 - [ ] **Phase 2: Typed Data and PWA State Safety** - Prevent authenticated or scoped data from surviving identity and scope transitions.
 - [ ] **Phase 3: Cinematic Design System** - Give every redesigned surface shared visual, interaction, artwork, theme, and motion foundations.
 - [ ] **Phase 4: Adaptive Shell and Global Scope** - Provide one accessible, permission-aware navigation frame across desktop and installed mobile use.
@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Maintainer can inspect an acceptance inventory covering every existing route, action, permission, scope, preference, locale, theme, and important UI state.
   5. CI blocks relevant backend, type, component, accessibility, visual, or critical-journey regressions before redesigned surfaces proceed.
 
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans executed
 **Wave 0**
 
 - [x] 01-01-PLAN.md — Create Wave 0 fail-first contracts for delivery policy and capability coverage.
@@ -65,7 +65,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 01-10-PLAN.md — Approve authoritative baselines and configure the repository-required aggregate check.
+- [x] 01-10-PLAN.md — Approve authoritative baselines and configure the repository-required aggregate check.
 
 ### Phase 2: Typed Data and PWA State Safety
 
@@ -201,7 +201,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Delivery Safeguards and Behavioral Baseline | 9/10 | In Progress | - |
+| 1. Delivery Safeguards and Behavioral Baseline | 10/10 | Complete | 2026-07-21 |
 | 2. Typed Data and PWA State Safety | 0/TBD | Not started | - |
 | 3. Cinematic Design System | 0/TBD | Not started | - |
 | 4. Adaptive Shell and Global Scope | 0/TBD | Not started | - |
