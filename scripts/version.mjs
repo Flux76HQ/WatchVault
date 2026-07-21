@@ -93,6 +93,23 @@ function readStagedVersion() {
   }
 }
 
+function readStagedRecords() {
+  function staged(path) {
+    try {
+      return git(["show", `:${path}`]);
+    } catch {
+      return git(["show", `HEAD:${path}`]);
+    }
+  }
+  const packageJson = JSON.parse(staged("frontend/package.json"));
+  const lockfile = JSON.parse(staged("frontend/package-lock.json"));
+  return {
+    canonical: staged("VERSION").trim(),
+    package: packageJson.version,
+    lockfile: lockfile.packages?.[""]?.version,
+  };
+}
+
 function changedPaths(base, staged) {
   const args = staged
     ? ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"]
@@ -119,7 +136,7 @@ function runCheck(args) {
   const staged = args.includes("--staged");
   const base = resolveBase(args);
   const policy = readVersionPolicy(ROOT);
-  const records = readVersionRecords(ROOT);
+  const records = staged ? readStagedRecords() : readVersionRecords(ROOT);
   assertMirrors(records);
   const current = staged ? readStagedVersion() : records.canonical;
   const baseVersion = `${readBaseVersion(base).major}.${readBaseVersion(base).minor}.${readBaseVersion(base).patch}`;

@@ -210,5 +210,8 @@ test("setup configures the committed staged-only hook idempotently", {
   execFileSync(process.execPath, [SETUP_CLI], { cwd: root });
   execFileSync(process.execPath, [SETUP_CLI], { cwd: root });
   assert.equal(git(root, "config", "--local", "--get", "core.hooksPath").trim(), ".githooks");
-  assert.match(readFileSync(HOOK, "utf8"), /^#!\/bin\/sh\nexec node scripts\/version\.mjs check --staged\n$/);
+  assert.match(
+    readFileSync(HOOK, "utf8").replaceAll("\r\n", "\n"),
+    /^#!\/bin\/sh\nexec node scripts\/version\.mjs check --staged\n$/,
+  );
 });
