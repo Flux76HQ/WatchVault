@@ -32,10 +32,14 @@ function entry(overrides = {}) {
 
 function fixtureRoot() {
   const root = mkdtempSync(join(tmpdir(), "watchvault-capabilities-"));
-  mkdirSync(join(root, "frontend", "src"), { recursive: true });
+  mkdirSync(join(root, "frontend", "src", "lib"), { recursive: true });
   writeFileSync(
     join(root, "frontend", "src", "App.tsx"),
-    'const path = "/dashboard";\nconst theme = "system";\n',
+    'const view = <><Loading /><Login /><Routes><Route path="/dashboard" element={<div />} /></Routes></>;\n',
+  );
+  writeFileSync(
+    join(root, "frontend", "src", "lib", "app.tsx"),
+    'interface Prefs { theme: "light" | "dark" | "system"; }\n',
   );
   return root;
 }
@@ -93,6 +97,10 @@ test("discovery and inventory sets must match exactly including singleton catalo
   const discovered = discoverCapabilities(root);
   assert.ok(discovered.some((item) => item.value === "/dashboard"));
   assert.ok(discovered.some((item) => item.value === "system"));
+  assert.throws(
+    () => validateInventory([entry()], { root, discovered }),
+    /missing discovered capability IDs/i,
+  );
 });
 
 test("canonical ordering is phase requirement kind then stable ID", () => {
