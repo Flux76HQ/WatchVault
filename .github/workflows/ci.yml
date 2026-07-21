@@ -1,0 +1,195 @@
+name: Delivery
+
+"on":
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      generate_baselines:
+        description: Generate the 16 canonical Playwright baseline images
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  select:
+    name: Select changed surfaces
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.select.outputs.version }}
+      inventory: ${{ steps.select.outputs.inventory }}
+      backend: ${{ steps.select.outputs.backend }}
+      frontend: ${{ steps.select.outputs.frontend }}
+      browser: ${{ steps.select.outputs.browser }}
+      reasons: ${{ steps.select.outputs.reasons }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+      - name: Classify changed paths
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs
+
+  contracts:
+    name: Repository contracts
+    needs: [select]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm --prefix frontend run test:contracts
+
+  version:
+    name: Canonical version
+    needs: [select]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+      - run: node scripts/version.mjs check
+
+  inventory:
+    name: Capability inventory
+    needs: [select]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: node frontend/scripts/capabilities.mjs check
+
+  backend:
+    name: Backend tests
+    needs: [select]
+    if: needs.select.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - run: python -m pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - run: python -m pytest backend/tests
+
+  frontend:
+    name: Frontend tests
+    needs: [select]
+    if: needs.select.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm --prefix frontend run build
+      - run: npm --prefix frontend run test -- --run
+
+  browser:
+    name: Browser smoke
+    needs: [select]
+    if: needs.select.outputs.browser == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - working-directory: frontend
+        run: npx playwright install chromium
+      - working-directory: frontend
+        run: npx playwright test --grep @smoke
+
+  baselines:
+    name: Generate browser baselines
+    needs: [select]
+    if: github.event_name == 'workflow_dispatch' && inputs.generate_baselines
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - working-directory: frontend
+        run: npx playwright install chromium
+      - name: Generate exactly 16 reference images
+        working-directory: frontend
+        run: |
+          npx playwright test --update-snapshots
+          test "$(find e2e -type f -path '*-snapshots/*.png' | wc -l)" -eq 16
+          find e2e -type f -path '*-snapshots/*.png' -print0 \
+            | sort -z \
+            | xargs -0 sha256sum > playwright-baseline-manifest.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-baselines-${{ github.sha }}
+          path: |
+            frontend/e2e/**/*-snapshots/*.png
+            frontend/playwright-baseline-manifest.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  gate:
+    name: delivery / gate
+    if: ${{ always() }}
+    needs: [select, contracts, version, inventory, backend, frontend, browser, baselines]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19"
+      - name: Aggregate required and explicitly skipped checks
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          GENERATE_BASELINES: ${{ inputs.generate_baselines || false }}
+        run: node scripts/ci/aggregate.mjs
+
+  publish:
+    name: Publish validated image
+    needs: [gate]
+    if: needs.gate.result == 'success' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit
