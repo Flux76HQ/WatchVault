@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,12 +50,14 @@ function git(cwd, ...args) {
 }
 
 function writeManifest(root, version) {
+  const frontend = join(root, "frontend");
+  mkdirSync(frontend, { recursive: true });
   writeFileSync(
-    join(root, "package.json"),
+    join(frontend, "package.json"),
     `${JSON.stringify({ name: "fixture", version }, null, 2)}\n`,
   );
   writeFileSync(
-    join(root, "package-lock.json"),
+    join(frontend, "package-lock.json"),
     `${JSON.stringify({
       name: "fixture",
       version,
@@ -73,7 +75,8 @@ function createRepository() {
   writeFileSync(join(root, "VERSION"), "1.0.0\n");
   writeManifest(root, "1.0.0");
   writeFileSync(join(root, "version-policy.json"), `${JSON.stringify(POLICY, null, 2)}\n`);
-  writeFileSync(join(root, "backend.py"), "baseline\n");
+  mkdirSync(join(root, "backend"), { recursive: true });
+  writeFileSync(join(root, "backend", "app.py"), "baseline\n");
   git(root, "add", ".");
   git(root, "commit", "-qm", "baseline");
   return root;
@@ -157,7 +160,7 @@ test("read and synchronize VERSION package and lockfile root records", () => {
 
 test("CLI bump reaches 1.0.1 and second run is a no-op", { skip: !existsSync(VERSION_CLI) }, () => {
   const root = createRepository();
-  writeFileSync(join(root, "backend.py"), "protected change\n");
+  writeFileSync(join(root, "backend", "app.py"), "protected change\n");
   const first = spawnSync(process.execPath, [VERSION_CLI, "bump", "--base", "HEAD"], {
     cwd: root,
     encoding: "utf8",
@@ -170,8 +173,8 @@ test("CLI bump reaches 1.0.1 and second run is a no-op", { skip: !existsSync(VER
   });
   const before = [
     readFileSync(join(root, "VERSION"), "utf8"),
-    readFileSync(join(root, "package.json"), "utf8"),
-    readFileSync(join(root, "package-lock.json"), "utf8"),
+    readFileSync(join(root, "frontend", "package.json"), "utf8"),
+    readFileSync(join(root, "frontend", "package-lock.json"), "utf8"),
   ];
   const second = spawnSync(process.execPath, [VERSION_CLI, "bump", "--base", "HEAD"], {
     cwd: root,
@@ -180,8 +183,8 @@ test("CLI bump reaches 1.0.1 and second run is a no-op", { skip: !existsSync(VER
   assert.equal(second.status, 0, second.stderr);
   assert.deepEqual([
     readFileSync(join(root, "VERSION"), "utf8"),
-    readFileSync(join(root, "package.json"), "utf8"),
-    readFileSync(join(root, "package-lock.json"), "utf8"),
+    readFileSync(join(root, "frontend", "package.json"), "utf8"),
+    readFileSync(join(root, "frontend", "package-lock.json"), "utf8"),
   ], before);
 });
 
@@ -189,8 +192,8 @@ test("staged check ignores an unstaged bump and prints exact remediation", {
   skip: !existsSync(VERSION_CLI),
 }, () => {
   const root = createRepository();
-  writeFileSync(join(root, "backend.py"), "staged protected change\n");
-  git(root, "add", "backend.py");
+  writeFileSync(join(root, "backend", "app.py"), "staged protected change\n");
+  git(root, "add", "backend/app.py");
   writeFileSync(join(root, "VERSION"), "1.0.1\n");
   const result = spawnSync(process.execPath, [VERSION_CLI, "check", "--staged"], {
     cwd: root,
