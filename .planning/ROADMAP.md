@@ -38,24 +38,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Maintainer can inspect an acceptance inventory covering every existing route, action, permission, scope, preference, locale, theme, and important UI state.
   5. CI blocks relevant backend, type, component, accessibility, visual, or critical-journey regressions before redesigned surfaces proceed.
 
-**Plans:** 1/10 plans executed
+**Plans:** 6/10 plans executed
 **Wave 0**
 
 - [x] 01-01-PLAN.md — Create Wave 0 fail-first contracts for delivery policy and capability coverage.
-- [ ] 01-02-PLAN.md — Approve the exact frontend test stack through the blocking supply-chain gate.
+- [x] 01-02-PLAN.md — Approve the exact frontend test stack through the blocking supply-chain gate.
 
 **Wave 1** *(blocked on Wave 0 completion)*
 
-- [ ] 01-03-PLAN.md — Implement canonical version policy, CLI behavior, and synchronized manifests.
+- [x] 01-03-PLAN.md — Implement canonical version policy, CLI behavior, and synchronized manifests.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-04-PLAN.md — Wire canonical versioning into runtime, image builds, Compose, and local hooks.
-- [ ] 01-05-PLAN.md — Install the approved test stack and create reusable frontend test infrastructure.
+- [x] 01-04-PLAN.md — Wire canonical versioning into runtime, image builds, Compose, and local hooks.
+- [x] 01-05-PLAN.md — Install the approved test stack and create reusable frontend test infrastructure.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-06-PLAN.md — Add representative component and DOM-accessibility regression evidence.
+- [x] 01-06-PLAN.md — Add representative component and DOM-accessibility regression evidence.
 - [ ] 01-07-PLAN.md — Create and populate the strict capability inventory and generated report.
 - [ ] 01-08-PLAN.md — Add deterministic Chromium journey, accessibility, and visual regression evidence.
 
@@ -201,7 +201,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Delivery Safeguards and Behavioral Baseline | 1/10 | In Progress | - |
+| 1. Delivery Safeguards and Behavioral Baseline | 6/10 | In Progress | - |
 | 2. Typed Data and PWA State Safety | 0/TBD | Not started | - |
 | 3. Cinematic Design System | 0/TBD | Not started | - |
 | 4. Adaptive Shell and Global Scope | 0/TBD | Not started | - |
