@@ -80,6 +80,7 @@ The most important non-code constraint is live repository enforcement. GitHub cu
 - Runtime, build, deploy, and CI changes require a SemVer bump; enforcement must be executable in hooks or CI. [VERIFIED: `.github/copilot-instructions.md`]
 - Keep environment files ignored, placeholders safe, and production credentials out of source and artifacts. [VERIFIED: `.github/copilot-instructions.md`]
 - Keep heavy validation in CI; the frontend build remains `tsc -b && vite build`, and Python tests follow existing `backend/tests/test_<area>.py` conventions. [VERIFIED: `.github/copilot-instructions.md`]
+- Preserve the phase's explicit `--skip-ui` intent: component/browser work records current behavior only and must not redesign product TSX, CSS, routes, or interactions.
 - Frontend source uses two-space TypeScript/TSX formatting, direct relative imports, and app-wide state in `frontend/src/lib/app.tsx`; Python uses four spaces and existing pytest fake/monkeypatch patterns. [VERIFIED: `.github/copilot-instructions.md`]
 - This research is operating through a GSD workflow; no implementation is part of this phase-research task. [VERIFIED: `.github/copilot-instructions.md`]
 
@@ -129,6 +130,7 @@ No project-defined skills exist under `.github/skills/` or `.agents/skills/`, an
 | `@playwright/test` [WARNING: flagged as suspicious — verify before using.] | `1.61.1` (2026-06-23) | Browser journey and visual runner | Official docs provide projects, emulation, route interception, and screenshots. [CITED: https://playwright.dev/docs/intro] |
 | `@axe-core/playwright` [WARNING: flagged as suspicious — verify before using.] | `4.12.1` (2026-06-23) | Browser accessibility scans | This is the integration named by Playwright's official accessibility guide. [CITED: https://playwright.dev/docs/accessibility-testing] |
 | `ajv` | `8.20.0` (2026-04-24) | Capability JSON Schema validation | Compile one strict schema once and format all errors before exiting nonzero. [VERIFIED: npm registry] |
+| `yaml` | `2.8.1` | Parse GitHub workflow YAML in executable contract tests | Use its document parser so syntax errors are rejected before semantic workflow assertions; supports the repository Node floor. [VERIFIED: npm registry] |
 
 ### Existing Supporting Stack
 
@@ -153,7 +155,7 @@ npm install --save-dev --save-exact \
   @testing-library/react@16.3.2 @testing-library/dom@10.4.1 \
   @testing-library/user-event@14.6.1 @testing-library/jest-dom@6.9.1 \
   axe-core@4.12.1 @playwright/test@1.61.1 \
-  @axe-core/playwright@4.12.1 ajv@8.20.0
+  @axe-core/playwright@4.12.1 ajv@8.20.0 yaml@2.8.1
 npm exec playwright install chromium
 ```
 
@@ -175,9 +177,10 @@ The gate was run against the npm ecosystem. No checked package exposes a registr
 | `@axe-core/playwright` | npm | 5.1 years | 6.5M/week | github.com/dequelabs/axe-core-npm | SUS (`too-new` latest release) | Flagged — checkpoint before install. [VERIFIED: package-legitimacy seam] |
 | `@playwright/test` | npm | 5.8 years | 46.6M/week | github.com/microsoft/playwright | SUS (`too-new` latest release) | Flagged — checkpoint before install. [VERIFIED: package-legitimacy seam] |
 | `ajv` | npm | 11.1 years | 340.2M/week | github.com/ajv-validator/ajv | OK | Approved. [VERIFIED: npm registry] |
+| `yaml` | npm | established | registry verified | github.com/eemeli/yaml | OK | Exact `2.8.1`; Node >=14.6; no registry postinstall. [VERIFIED: npm registry] |
 
 **Packages removed due to SLOP verdict:** none  
-**Packages flagged as suspicious (planner must insert `checkpoint:human-verify`):** `vitest`, `@testing-library/jest-dom`, `@axe-core/playwright`, `@playwright/test`
+**Packages flagged as suspicious (planner must insert a blocking `checkpoint:human-action` before installation):** `vitest`, `@testing-library/jest-dom`, `@axe-core/playwright`, `@playwright/test`
 
 ## Recommended File and Command Contract
 
@@ -190,6 +193,7 @@ version-policy.json                          # exact directories/files/excludes
 scripts/
 ├── version.mjs                              # public CLI
 ├── setup.mjs                                # idempotent core.hooksPath setup
+├── docker-version.mjs                       # root VERSION adapter for Compose/CI
 ├── ci-changes.mjs                           # emits selected job booleans
 ├── lib/version-policy.mjs                   # pure parsing/diff/version logic
 └── tests/version-policy.test.mjs            # node:test + temporary Git repos
@@ -200,7 +204,8 @@ docs/CAPABILITIES.md                         # deterministic generated review
 frontend/
 ├── scripts/
 │   ├── capabilities.mjs                     # check/generate/discover CLI
-│   └── capabilities.test.mjs                # validator/discovery fixtures
+│   ├── capabilities.test.mjs                # validator/discovery fixtures
+│   └── workflow-contract.test.mjs            # resolves yaml from frontend install
 ├── src/test/
 │   ├── setup.ts                             # cleanup + jest-dom/vitest
 │   ├── render.tsx                           # providers/router helper
@@ -227,12 +232,16 @@ node scripts/version.mjs check --staged
 node scripts/version.mjs bump [--minor | --major] [--base <ref>]
 node scripts/version.mjs print
 node scripts/setup.mjs
+node scripts/docker-version.mjs print
+node scripts/docker-version.mjs compose up -d --build
 node frontend/scripts/capabilities.mjs check
 node frontend/scripts/capabilities.mjs generate
 node frontend/scripts/capabilities.mjs discover
 npm --prefix frontend run test
 npm --prefix frontend run test:e2e
 npm --prefix frontend run test:e2e:update
+npm --prefix frontend run test:contracts
+npm --prefix frontend run validate:phase
 python -m pytest backend/tests
 ```
 
@@ -322,7 +331,7 @@ exec node scripts/version.mjs check --staged
 
 `backend/app/version.py` should resolve repository/image root and read `VERSION`; `Dockerfile` must copy `VERSION` to `/app/VERSION`. `meta.py` imports that accessor rather than retaining a constant. The Docker build accepts a required `VERSION` argument and emits `LABEL org.opencontainers.image.version=$VERSION`; OCI defines that annotation as the packaged software version. [CITED: https://github.com/opencontainers/image-spec/blob/main/annotations.md]
 
-CI passes `node scripts/version.mjs print` into both the Docker build argument and metadata labels. On a tag, `version.mjs check` also requires `GITHUB_REF_NAME === "v" + VERSION`.
+`scripts/docker-version.mjs` is the canonical build adapter. Its `print` operation reads and validates root VERSION for CI; its `compose` operation injects the same value as `WATCHVAULT_VERSION` while invoking the existing two-file Compose workflow through argument arrays. `docker-compose.build.yml` maps that required environment value to `build.args.VERSION` without a default. A missing/malformed root file, conflicting caller value, absent Compose mapping, or hardcoded drift fails clearly. README and the Compose override document `node scripts/docker-version.mjs compose up -d --build`, preserving the existing source-build services/files/flags without creating a second version record. On a tag, `version.mjs check` also requires `GITHUB_REF_NAME === "v" + VERSION`.
 
 ### Pattern 4: Strict Inventory with Discovery, Not Generation from Source
 
@@ -384,11 +393,16 @@ Do not put top-level PR `paths` filters on the required workflow. GitHub documen
 2. Checkout with full history/tags (`fetch-depth: 0`).
 3. Run an always-present `changes` job using `git diff --name-only` and repository-owned classification logic.
 4. Always run version and inventory validation.
-5. Conditionally run backend, frontend, and browser jobs on PRs; force all booleans true on `main` and tags.
-6. Run `delivery / gate` with `if: always()` and fail unless all selected dependencies succeeded.
-7. Call the reusable Docker workflow only after the gate on `main`/tag pushes.
+5. Always run the explicit frontend `test:contracts` package script covering version-policy, Docker/OCI/Compose, change-selection, workflow semantics, and capability tooling.
+6. Provision clean runners explicitly: Python 3.12 plus both checked-in backend requirement files; Node 20.19.x plus `npm ci --prefix frontend`; and Playwright 1.61.1 Chromium in `mcr.microsoft.com/playwright:v1.61.1-noble`.
+7. Conditionally run backend, frontend, and browser jobs on PRs; force all booleans true on `main` and tags.
+8. Run ordinary visual comparison and baseline generation in the identical pinned Playwright container/browser environment.
+9. Run `delivery / gate` with `if: always()` and fail unless all selected dependencies succeeded.
+10. Call the reusable Docker workflow only after the gate on `main`/tag pushes; feed its VERSION build argument from `scripts/docker-version.mjs print`.
 
 `frontend/**` selects frontend and browser; `backend/**`/`plugins/**` select backend; browser also runs for backend API/auth contract changes. Changes to CI, scripts, Docker/deploy/compose, test selectors, or fixture infrastructure select the full suite. Home Assistant-only changes run version/inventory unless shared scrobble code also changed.
+
+Place `workflow-contract.test.mjs` under `frontend/scripts`, not root `scripts/tests`. ESM package resolution then climbs to `frontend/node_modules/yaml` after the ordinary lockfile-clean install. The contract must reject a CI workflow that omits any explicit contract suite or clean-runner provisioning step; do not rely on `NODE_PATH`, a root package installation, or broad test globs.
 
 ### Anti-Patterns to Avoid
 
@@ -455,6 +469,10 @@ Do not put top-level PR `paths` filters on the required workflow. GitHub documen
 ### Pitfall 9: axe Is Treated as Full Accessibility Proof
 **What goes wrong:** tests pass despite keyboard order, focus, announcements, or contrast over dynamic artwork remaining unusable.  
 **Avoid:** use axe as automated regression evidence, not a replacement for later manual WCAG verification. [CITED: https://playwright.dev/docs/accessibility-testing]
+
+### Pitfall 10: Required Docker ARG Breaks Local Compose
+**What goes wrong:** changing Dockerfile to require VERSION makes the existing scalar `build: .` override fail or encourages a duplicated `.env` version.
+**Avoid:** route local Compose and CI through `scripts/docker-version.mjs`, require Compose interpolation with no default, preserve the two-file `up -d --build` flow through the adapter, and contract-test missing/conflicting/drifted input.
 
 ## Code Examples
 
@@ -557,15 +575,13 @@ Do not enable the hook before the helper and migration tests pass. Do not config
 
 All implementation recommendations above derive from locked decisions, live repository inspection, registry checks, or cited official documentation; no training-only factual claims are relied upon.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Who will update the live GitHub ruleset after the first `delivery / gate` run?**
-   - What we know: the current active ruleset does not require PRs or status checks. [VERIFIED: GitHub API]
-   - Recommendation: add an explicit human/API checkpoint in the final plan; require the exact aggregate check on `main` and prohibit bypass.
+1. **Ruleset ownership:** A repository administrator must configure the live GitHub `main` ruleset as a blocking human action after the exact `delivery / gate` context has appeared in a real workflow run. The action requires pull requests, requires that exact status check, and permits no bypass. Repository tooling and the execution agent may verify the result through `gh api`, but must not claim or automate administrator approval.
 
-2. **Where should authoritative visual baseline updates run while Docker is unavailable locally?**
-   - What we know: Docker is absent in this worktree environment, while Playwright warns against cross-environment baseline generation. [VERIFIED: environment probe] [CITED: https://playwright.dev/docs/test-snapshots]
-   - Recommendation: provide a manual CI update mode that uploads the 16 Linux-container snapshots; reviewers download, inspect, and commit them.
+2. **Authoritative visual generation:** `.github/workflows/ci.yml` must expose an explicit `workflow_dispatch` baseline-generation input that runs the exact Playwright 1.61.1 suite and Chromium revision inside the pinned Linux image `mcr.microsoft.com/playwright:v1.61.1-noble`. That route generates the 16 desktop/mobile × dark/light PNGs plus a manifest containing commit SHA, package/browser versions, container identity, and image hashes, then uploads them as a review artifact. Plan 01-10 downloads that Linux artifact before human approval and records the approved files in the repository; local Docker is neither required nor authoritative.
+
+3. **CI/Compose version adapter and clean-runner contract:** `scripts/docker-version.mjs` reads the sole root VERSION for both local Compose and CI Docker build arguments. CI installs Python 3.12 dependencies from both backend requirement files, Node 20.19.x dependencies via `npm ci --prefix frontend`, and pinned Chromium in the Playwright 1.61.1 Noble container. Ordinary visual comparison uses the same container as generation. Workflow semantics live under `frontend/scripts` so `yaml@2.8.1` resolves from the frontend lockfile on a clean runner.
 
 ## Environment Availability
 
@@ -598,9 +614,9 @@ All implementation recommendations above derive from locked decisions, live repo
 | Component framework | Vitest `4.1.10`, jsdom `29.1.1`, Testing Library, axe-core |
 | Browser framework | Playwright Test `1.61.1`, Chromium only, `@axe-core/playwright` |
 | Quick backend command | `python -m pytest backend/tests -q` |
-| Quick tooling command | `node --test scripts/tests/*.test.mjs frontend/scripts/*.test.mjs` |
+| Quick tooling command | `npm --prefix frontend run test:contracts` |
 | Quick frontend command | `npm --prefix frontend run test -- --run` |
-| Full suite command | `node scripts/version.mjs check && node frontend/scripts/capabilities.mjs check && python -m pytest backend/tests && npm --prefix frontend run build && npm --prefix frontend run test -- --run && npm --prefix frontend run test:e2e` |
+| Full suite command | `npm --prefix frontend run validate:phase` in the pinned CI visual environment |
 
 ### Phase Requirements → Test Map
 
@@ -667,6 +683,8 @@ All implementation recommendations above derive from locked decisions, live repo
 - [ ] `frontend/playwright.config.ts`, fixtures, journey spec, and 16 snapshots
 - [ ] package installation and Chromium provisioning
 - [ ] `.github/workflows/ci.yml` with stable aggregate check
+- [ ] `frontend/scripts/workflow-contract.test.mjs` with frontend-local yaml resolution, explicit contract-suite execution, and fresh-runner provisioning assertions
+- [ ] `scripts/docker-version.mjs` plus Compose/CI root-VERSION adapter contract
 - [ ] post-run GitHub ruleset checkpoint
 
 ## CI Job Selection Matrix

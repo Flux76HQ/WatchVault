@@ -18,10 +18,20 @@ created: 2026-07-21
 | Property | Value |
 |----------|-------|
 | **Framework** | pytest >=8.0; Node `node:test`; Vitest 4.1.10 with jsdom, Testing Library, and axe-core; Playwright Test 1.61.1 with Chromium |
-| **Config file** | Backend: none; frontend and browser configs are installed in Wave 0 |
-| **Quick run command** | `node --test scripts/tests/*.test.mjs frontend/scripts/*.test.mjs && python -m pytest backend/tests -q && npm --prefix frontend run test -- --run` |
-| **Full suite command** | `node scripts/version.mjs check && node frontend/scripts/capabilities.mjs check && python -m pytest backend/tests && npm --prefix frontend run build && npm --prefix frontend run test -- --run && npm --prefix frontend run test:e2e` |
+| **Config file** | Backend: none; `frontend/vitest.config.ts` is created by 01-05 (Wave 2), `frontend/playwright.config.ts` by 01-08 (Wave 3), and `.github/workflows/ci.yml` by 01-09 (Wave 4) |
+| **Quick run command** | `npm --prefix frontend run test:contracts` |
+| **Full suite command** | `npm --prefix frontend run validate:phase` |
 | **Estimated runtime** | Quick: <120 seconds; full: <10 minutes in CI |
+
+`test:contracts` is an explicit package script, not a filesystem glob. It runs exactly `../scripts/tests/version-policy.test.mjs`, `../scripts/tests/docker-contract.test.mjs`, `../scripts/tests/ci-changes.test.mjs`, `scripts/workflow-contract.test.mjs`, and `scripts/capabilities.test.mjs`. `validate:phase` runs that contract script, canonical version check, capability check, backend pytest, frontend build, Vitest, and ordinary Playwright comparison. The full command is authoritative only in the pinned CI visual environment described below.
+
+### Fresh-Runner and Visual Environment Contract
+
+- CI explicitly sets up Python 3.12 and installs `backend/requirements.txt` plus `backend/requirements-dev.txt`.
+- CI explicitly sets up Node 20.19.x and runs `npm ci --prefix frontend`; no job assumes frontend dependencies are present.
+- Workflow semantics are parsed by `frontend/scripts/workflow-contract.test.mjs`, whose direct `yaml@2.8.1` import resolves through `frontend/node_modules` on a clean runner.
+- Ordinary four-project visual comparison and `workflow_dispatch` baseline generation both run Playwright 1.61.1 Chromium in `mcr.microsoft.com/playwright:v1.61.1-noble`, with the same clean install and exact Chromium provisioning command.
+- Pull-request permissions remain read-only; the privileged PR trigger is absent; fixtures and retained artifacts contain only synthetic data and no credentials.
 
 ---
 
@@ -30,7 +40,7 @@ created: 2026-07-21
 - **After every task commit:** Run the focused test file and `node scripts/version.mjs check --staged` when protected files are staged.
 - **After every plan wave:** Run version and inventory checks, all pytest tests, the frontend build, and all Vitest tests.
 - **Before `/gsd-verify-work`:** Run the complete suite, including all four Playwright projects.
-- **Max feedback latency:** 120 seconds for task-level checks; 10 minutes for the complete CI gate.
+- **Max feedback latency:** target <30 seconds for focused task checks where dependencies are already installed; package/browser provisioning is setup work; 10 minutes for the complete CI gate.
 
 ---
 
@@ -38,25 +48,44 @@ created: 2026-07-21
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 01-TBD-01 | TBD | 0 | DELV-01 | T-01 / T-02 | Version parsing and Git path handling reject malformed or unsafe input | unit + integration | `node --test scripts/tests/version-policy.test.mjs && python -m pytest backend/tests/test_meta.py -q && node scripts/version.mjs check` | ❌ W0 | ⬜ pending |
-| 01-TBD-02 | TBD | 0 | DELV-02 | T-01 / T-06 | Protected changes cannot pass without a sufficient bump and exact remediation | temp-Git integration | `node --test scripts/tests/version-policy.test.mjs` | ❌ W0 | ⬜ pending |
-| 01-TBD-03 | TBD | 0 | DELV-03 | T-01 | Patch/minor/major bumps are correct, bounded, and idempotent | unit + temp workspace | `node --test scripts/tests/version-policy.test.mjs` | ❌ W0 | ⬜ pending |
-| 01-TBD-04 | TBD | 0 | DELV-04 | T-06 | Hook checks staged state only; CI remains authoritative when hooks are bypassed | temp-Git commit integration | `node --test scripts/tests/version-policy.test.mjs` | ❌ W0 | ⬜ pending |
-| 01-TBD-05 | TBD | 0 | DELV-05 | T-02 / T-05 | Strict schema, safe source references, stable IDs, and complete discoverable catalogs | validator + snapshot | `node --test frontend/scripts/capabilities.test.mjs && node frontend/scripts/capabilities.mjs check` | ❌ W0 | ⬜ pending |
-| 01-TBD-06 | TBD | 0 | DELV-06 | T-03 / T-04 / T-06 | Synthetic fixtures contain no credentials; PR jobs have read-only permissions and an aggregate gate | backend + component + a11y + E2E | Full suite command above | pytest ✅; frontend/browser ❌ W0 | ⬜ pending |
+| 01-01-01 | 01-01 | 0 | DELV-01..04 | T-01 / T-02 | Version, path, authorized-write, Docker ARG/OCI/COPY/npm-ci, canonical Compose adapter, and missing/drifted build-input contracts are fail-first | unit + temp Git + text contract | `node --test scripts/tests/version-policy.test.mjs scripts/tests/docker-contract.test.mjs` after implementation | ❌ W0 contracts | ⬜ pending |
+| 01-01-02 | 01-01 | 0 | DELV-05 | T-02 / T-05 | Schema, references, exact discovery equality, stable IDs, and generated bytes are fail-first | unit + fixture trees | `node --test frontend/scripts/capabilities.test.mjs` after implementation | ❌ W0 contract | ⬜ pending |
+| 01-01-03 | 01-01 | 0 | DELV-06 | T-03 / T-06 | Path selection, explicit contract-suite execution, clean-runner provisioning, workflow syntax/security, matching visual environments, generation/gate/publish ordering are fail-first | unit + workflow contract | `node --test scripts/tests/ci-changes.test.mjs frontend/scripts/workflow-contract.test.mjs` after implementation | ❌ W0 contracts | ⬜ pending |
+| 01-02-01 | 01-02 | 0 | DELV-05,06 | T-01-SC | Exact SUS package identities and pins require blocking human action before install | registry probe + human action | `node -e "const {execFileSync}=require('node:child_process');const n=process.platform==='win32'?'npm.cmd':'npm';for(const p of ['vitest@4.1.10','@testing-library/jest-dom@6.9.1','@playwright/test@1.61.1','@axe-core/playwright@4.12.1'])execFileSync(n,['view',p,'version','repository.url','--json'],{stdio:'inherit'});"` | external W0 gate | ⬜ pending |
+| 01-03-01 | 01-03 | 1 | DELV-01..03 | T-01 / T-02 | Pure SemVer and protected-path engine rejects unsafe inputs | unit | `node --test scripts/tests/version-policy.test.mjs --test-name-pattern="parse|path|policy|legacy"` | ❌ | ⬜ pending |
+| 01-03-02 | 01-03 | 1 | DELV-01..03 | T-03 | Exact 1.0.1 mirrors and pre/post hashes prove second bump no-op | unit + temp workspace | `node --test scripts/tests/version-policy.test.mjs --test-name-pattern="synchron|1.0.1|second.run|no.op" && node scripts/version.mjs check` | ❌ | ⬜ pending |
+| 01-04-01 | 01-04 | 2 | DELV-01 | T-03 | Public metadata consumes canonical VERSION and fails on malformed input | pytest | `python -m pytest backend/tests/test_meta.py -q` | ❌ | ⬜ pending |
+| 01-04-02 | 01-04 | 2 | DELV-01 | T-03 / T-04 | Docker, local Compose, and CI receive adapter-validated root VERSION; missing/malformed/conflicting input fails clearly | Node contract | `node --test scripts/tests/docker-contract.test.mjs` | ❌ | ⬜ pending |
+| 01-04-03 | 01-04 | 2 | DELV-04 | T-01 / T-02 | Setup is idempotent and hook is staged-only/lightweight | temp-Git integration | `node --test scripts/tests/version-policy.test.mjs --test-name-pattern="staged|hook|setup"` | ❌ | ⬜ pending |
+| 01-05-01 | 01-05 | 2 | DELV-05,06 | T-01-SC | Only approved exact pins enter the lockfile; yaml resolves from the frontend install; explicit contract/full-phase scripts exist without prematurely running later RED contracts; version remains synchronized | clean install + package resolution + script inspection | `npm --prefix frontend ci && npm --prefix frontend exec -- node --input-type=module -e "import('yaml').then(m=>{if(typeof m.parseDocument!=='function')process.exit(1)})" && npm pkg get scripts.test:contracts scripts.validate:phase --prefix frontend && node scripts/version.mjs check` | ❌ | ⬜ pending |
+| 01-05-02 | 01-05 | 2 | DELV-06 | T-02 | Vitest/jsdom setup exits non-watch and build remains strict | harness | `npm --prefix frontend run test -- --run --passWithNoTests && npm --prefix frontend run build` | ❌ | ⬜ pending |
+| 01-05-03 | 01-05 | 2 | DELV-06 | T-02 | Provider render and axe helpers are typed and synthetic | harness | `npm --prefix frontend run test -- --run --passWithNoTests && npm --prefix frontend run build` | ❌ | ⬜ pending |
+| 01-06-01 | 01-06 | 3 | DELV-06 | T-01 / T-02 | Auth/routes/themes/preferences and representative axe states are preserved | component + a11y | `npm --prefix frontend run test -- --run src/App.test.tsx src/pages/Settings.test.tsx` | ❌ | ⬜ pending |
+| 01-06-02 | 01-06 | 3 | DELV-06 | T-01 / T-03 | Permission-gated watch mutation sends exact payload and exposes feedback | component + a11y | `npm --prefix frontend run test -- --run src/pages/TitleDetail.test.tsx` | ❌ | ⬜ pending |
+| 01-07-01 | 01-07 | 3 | DELV-05 | T-01 / T-02 | Strict validator/discovery/generator fails closed | unit | `node --test frontend/scripts/capabilities.test.mjs` | ❌ | ⬜ pending |
+| 01-07-02 | 01-07 | 3 | DELV-05 | T-04 | Canonical inventory exactly covers live catalogs and ownership | validator | `node frontend/scripts/capabilities.mjs check` | ❌ | ⬜ pending |
+| 01-07-03 | 01-07 | 3 | DELV-05 | T-03 | Generated report is byte-stable | generator | `node frontend/scripts/capabilities.mjs generate && node frontend/scripts/capabilities.mjs check` | ❌ | ⬜ pending |
+| 01-08-01 | 01-08 | 3 | DELV-06 | T-01-SC | Exactly four pinned Chromium projects are configured | browser list | `npm --prefix frontend exec playwright test -- --list` | ❌ | ⬜ pending |
+| 01-08-02 | 01-08 | 3 | DELV-06 | T-01 / T-03 | Stateful API fixture rejects unknown traffic and mutates exact watch state | focused browser | `npm --prefix frontend exec playwright test -- --project=chromium-desktop-dark --grep="fixture contract"` | ❌ | ⬜ pending |
+| 01-08-03 | 01-08 | 3 | DELV-06 | T-03 / T-04 | Focused nonvisual journey smoke proves fixture wiring without baseline update | focused browser | `npm --prefix frontend exec playwright test -- --project=chromium-desktop-dark --grep="@smoke" --reporter=line` | ❌ | ⬜ pending |
+| 01-09-01 | 01-09 | 4 | DELV-06 | T-01 / T-04 | Changed-surface outputs match every matrix row | unit | `node --test scripts/tests/ci-changes.test.mjs` | ❌ | ⬜ pending |
+| 01-09-02 | 01-09 | 4 | DELV-01..06 | T-02..09 | All five Node contract suites, YAML, triggers, read-only permissions, Python/Node/npm/Chromium setup, matching Linux visual environments, canonical Docker input, gate, and publisher contracts pass | explicit contract script | `npm ci --prefix frontend && npm --prefix frontend run test:contracts` | ❌ | ⬜ pending |
+| 01-10-01 | 01-10 | 5 | DELV-06 | T-02 / T-03 | Manifest-backed Linux artifact has exact identity, hashes, 16 PNGs, and human visual approval | artifact + focused smoke + human-check | `npm --prefix frontend exec playwright test -- --project=chromium-desktop-dark --grep="@smoke" --reporter=line` | external artifact | ⬜ pending |
+| 01-10-02 | 01-10 | 5 | DELV-01..06 | T-01 / T-04 | Repository administrator requires exact aggregate check with no bypass | API evidence + human action | `node scripts/version.mjs check && node frontend/scripts/capabilities.mjs check && gh api repos/Flux76HQ/WatchVault/rulesets` | external ruleset | ⬜ pending |
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `scripts/tests/version-policy.test.mjs` — DELV-01 through DELV-04 version, path, tag, and hook coverage.
-- [ ] `backend/tests/test_meta.py` — canonical runtime version exposure.
-- [ ] `frontend/scripts/capabilities.test.mjs` — DELV-05 schema, discovery, reference, and generated-report coverage.
-- [ ] `frontend/vitest.config.ts` and `frontend/src/test/setup.ts` — component and axe test infrastructure.
-- [ ] Representative `*.test.tsx` files — auth gates, theme/preferences, semantic states, and one mutation.
-- [ ] `frontend/playwright.config.ts`, deterministic fixtures, critical journey, axe checks, and 16 reviewed snapshots.
-- [ ] Frontend test dependencies and pinned Chromium provisioning.
-- [ ] `.github/workflows/ci.yml` — path-aware jobs and stable aggregate `delivery / gate`.
+- [ ] `scripts/tests/assert-red.mjs` — cross-platform syntax-first expected-RED child-process assertion.
+- [ ] `scripts/tests/version-policy.test.mjs` — DELV-01 through DELV-04 version, path, tag, authorized-write, and hook contracts.
+- [ ] `scripts/tests/docker-contract.test.mjs` — required VERSION argument, OCI label, runtime copy, `npm ci`, canonical local Compose/CI adapter, and missing/drifted-input contract.
+- [ ] `frontend/scripts/capabilities.test.mjs` — DELV-05 schema, discovery, reference, and generated-report contract.
+- [ ] `scripts/tests/ci-changes.test.mjs` — D-18 changed-surface and full-suite selection contract.
+- [ ] `frontend/scripts/workflow-contract.test.mjs` — frontend-local YAML resolution plus trigger, permission, explicit contract suites, fresh-runner provisioning, matching ordinary/generation visual environments, aggregate gate, and publication contract.
+- [ ] `01-02-SUMMARY.md` — blocking human-action audit for all SUS package identities and exact pins.
+
+Wave 0 does not install packages, browsers, configs, snapshots, or workflows. Those implementations occur in Waves 2-5 after their contracts and supply-chain gate exist. `scripts/tests/docker-contract.test.mjs` also specifies `scripts/docker-version.mjs`, the Compose build-argument mapping, preserved source-build command, and clear missing/drifted-input failures before Plan 01-04 implements them.
 
 ---
 
@@ -64,8 +93,8 @@ created: 2026-07-21
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| GitHub ruleset requires `delivery / gate` before merge | DELV-06 | Repository rulesets are external to committed source | Inspect the default-branch ruleset after CI lands and confirm `delivery / gate` is a required status check; attempt or inspect a PR with a failing child job and confirm merge is blocked |
-| Initial desktop/mobile dark/light screenshots are intentional | DELV-06 | Baseline appearance requires human approval before future pixel diffs can be authoritative | Review all 16 Playwright snapshots and approve them before marking Wave 0 complete |
+| GitHub ruleset requires `delivery / gate` before merge | DELV-06 | Repository rulesets are external and require a repository-administrator human action | After the check appears, require pull requests plus exact `delivery / gate` on `main`, prohibit bypass, and verify a selected failing child blocks merge |
+| Initial desktop/mobile dark/light screenshots are intentional | DELV-06 | Baseline appearance requires human approval after authoritative Linux generation | Review the manifest-backed 16 PNGs downloaded from the pinned Playwright 1.61.1 Linux workflow; verify hashes, dimensions/themes/checkpoints, synthetic content, and visible mutation |
 
 ---
 
@@ -75,7 +104,7 @@ created: 2026-07-21
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify.
 - [ ] Wave 0 covers all missing references.
 - [ ] No watch-mode flags.
-- [ ] Task-level feedback latency is under 120 seconds.
-- [ ] `nyquist_compliant: true` set in frontmatter.
+- [ ] Focused task feedback targets 30 seconds where dependencies are installed; provisioning steps are explicitly identified as setup work.
+- [ ] Implementation evidence exists for every mapped command; only then may `nyquist_compliant` change from `false`.
 
 **Approval:** pending
