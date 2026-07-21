@@ -149,16 +149,78 @@ Deferred beyond the redesign milestone.
 
 ## Traceability
 
-Roadmap phase mapping is populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| DELV-01 | Phase 1 | Pending |
+| DELV-02 | Phase 1 | Pending |
+| DELV-03 | Phase 1 | Pending |
+| DELV-04 | Phase 1 | Pending |
+| DELV-05 | Phase 1 | Pending |
+| DELV-06 | Phase 1 | Pending |
+| DSYS-01 | Phase 3 | Pending |
+| DSYS-02 | Phase 3 | Pending |
+| DSYS-03 | Phase 3 | Pending |
+| DSYS-04 | Phase 3 | Pending |
+| DSYS-05 | Phase 3 | Pending |
+| DSYS-06 | Phase 3 | Pending |
+| DSYS-07 | Phase 3 | Pending |
+| SHEL-01 | Phase 4 | Pending |
+| SHEL-02 | Phase 4 | Pending |
+| SHEL-03 | Phase 4 | Pending |
+| SHEL-04 | Phase 4 | Pending |
+| SHEL-05 | Phase 4 | Pending |
+| SHEL-06 | Phase 4 | Pending |
+| DASH-01 | Phase 5 | Pending |
+| DASH-02 | Phase 5 | Pending |
+| DASH-03 | Phase 5 | Pending |
+| DASH-04 | Phase 5 | Pending |
+| SRCH-01 | Phase 5 | Pending |
+| SRCH-02 | Phase 5 | Pending |
+| SRCH-03 | Phase 5 | Pending |
+| SRCH-04 | Phase 5 | Pending |
+| TITL-01 | Phase 5 | Pending |
+| TITL-02 | Phase 5 | Pending |
+| TITL-03 | Phase 5 | Pending |
+| TITL-04 | Phase 5 | Pending |
+| TITL-05 | Phase 5 | Pending |
+| HIST-01 | Phase 5 | Pending |
+| HIST-02 | Phase 5 | Pending |
+| HIST-03 | Phase 5 | Pending |
+| ANLY-01 | Phase 6 | Pending |
+| ANLY-02 | Phase 6 | Pending |
+| ANLY-03 | Phase 6 | Pending |
+| ANLY-04 | Phase 6 | Pending |
+| ANLY-05 | Phase 6 | Pending |
+| ADMN-01 | Phase 7 | Pending |
+| ADMN-02 | Phase 7 | Pending |
+| ADMN-03 | Phase 7 | Pending |
+| ADMN-04 | Phase 7 | Pending |
+| ADMN-05 | Phase 7 | Pending |
+| ADMN-06 | Phase 7 | Pending |
+| ADMN-07 | Phase 7 | Pending |
+| ADMN-08 | Phase 7 | Pending |
+| QUAL-01 | Phase 8 | Pending |
+| QUAL-02 | Phase 8 | Pending |
+| QUAL-03 | Phase 8 | Pending |
+| QUAL-04 | Phase 8 | Pending |
+| QUAL-05 | Phase 8 | Pending |
+| QUAL-06 | Phase 8 | Pending |
+| QUAL-07 | Phase 8 | Pending |
+| QUAL-08 | Phase 2 | Pending |
+| QUAL-09 | Phase 8 | Pending |
+| QUAL-10 | Phase 8 | Pending |
+| RELS-01 | Phase 9 | Pending |
+| RELS-02 | Phase 9 | Pending |
+| RELS-03 | Phase 9 | Pending |
+| RELS-04 | Phase 9 | Pending |
+| RELS-05 | Phase 9 | Pending |
+| RELS-06 | Phase 9 | Pending |
 
 **Coverage:**
 - v1 requirements: 64 total
-- Mapped to phases: 0
-- Unmapped: 64
+- Mapped to phases: 64
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-21*
-*Last updated: 2026-07-21 after initial definition*
+*Last updated: 2026-07-21 after roadmap creation*
