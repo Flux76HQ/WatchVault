@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://watchvault.local/capabilities.schema.json",
+  "title": "WatchVault capability inventory",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id",
+      "kind",
+      "source",
+      "behavior",
+      "dimensions",
+      "owner",
+      "evidence"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^(route|action|permission|scope|preference|locale|theme|state)\\.[a-z0-9][a-z0-9._-]*$"
+      },
+      "kind": {
+        "enum": [
+          "route",
+          "action",
+          "permission",
+          "scope",
+          "preference",
+          "locale",
+          "theme",
+          "state"
+        ]
+      },
+      "source": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "anchor"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^\\\\]+$"
+          },
+          "anchor": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "behavior": {
+        "type": "string",
+        "minLength": 1
+      },
+      "dimensions": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["permissions", "scopes", "themes", "locales", "states"],
+        "properties": {
+          "permissions": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+          "scopes": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+          "themes": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+          "locales": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+          "states": { "$ref": "#/$defs/nonEmptyUniqueStrings" }
+        }
+      },
+      "owner": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirement", "phase"],
+        "properties": {
+          "requirement": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]{2}$"
+          },
+          "phase": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "evidence": {
+        "$ref": "#/$defs/nonEmptyUniqueStrings"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyUniqueStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "include": [
+    "backend/**",
+    "frontend/**",
+    "plugins/**",
+    "homeassistant/**",
+    "deploy/**",
+    "scripts/**",
+    ".github/workflows/**",
+    "Dockerfile",
+    "docker-compose.yml",
+    "docker-compose.build.yml"
+  ],
+  "exclude": [
+    "backend/**/*.md",
+    "frontend/**/*.md",
+    "plugins/**/*.md",
+    "homeassistant/**/*.md",
+    "deploy/**/*.md",
+    "scripts/**/*.md",
+    "scripts/tests/**"
+  ]
+}

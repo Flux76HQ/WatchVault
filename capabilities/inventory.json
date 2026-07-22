@@ -1,0 +1,4724 @@
+[
+  {
+    "id": "state.pending",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "disabled={busy"
+    },
+    "behavior": "Users receive the current pending state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending"
+      ]
+    },
+    "owner": {
+      "requirement": "DSYS-03",
+      "phase": 3
+    },
+    "evidence": [
+      "planned:phase-3"
+    ]
+  },
+  {
+    "id": "state.success",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "const toast = useCallback"
+    },
+    "behavior": "Users receive the current success state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "success"
+      ]
+    },
+    "owner": {
+      "requirement": "DSYS-03",
+      "phase": 3
+    },
+    "evidence": [
+      "planned:phase-3"
+    ]
+  },
+  {
+    "id": "theme.dark",
+    "kind": "theme",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "\"dark\""
+    },
+    "behavior": "Users can render the interface in dark theme mode.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "DSYS-05",
+      "phase": 3
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "theme.light",
+    "kind": "theme",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "\"light\""
+    },
+    "behavior": "Users can render the interface in light theme mode.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "DSYS-05",
+      "phase": 3
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "theme.system",
+    "kind": "theme",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "\"system\""
+    },
+    "behavior": "Users can render the interface in system theme mode.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "DSYS-05",
+      "phase": 3
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "route.wildcard",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"*\""
+    },
+    "behavior": "Unknown authenticated paths fall back to the dashboard.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-02",
+      "phase": 4
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "scope.household",
+    "kind": "scope",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "scope: string; // 'all' or a user id"
+    },
+    "behavior": "Users can view aggregate household data with the all scope.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-03",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "scope.personal",
+    "kind": "scope",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "scope: string; // 'all' or a user id"
+    },
+    "behavior": "Users can select an individual profile scope by user identifier.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-03",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.del.auth-passkeys-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "`/auth/passkeys/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /auth/passkeys/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-login-begin",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/login/begin\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/login/begin operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-login-complete",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/login/complete\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/login/complete operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-logout",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "\"/auth/logout\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/logout operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-passkey-add-begin",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/passkey/add/begin\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/passkey/add/begin operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-passkey-add-complete",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/passkey/add/complete\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/passkey/add/complete operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-recover",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/recover\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/recover operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-recovery-codes-regenerate",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/recovery-codes/regenerate\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/recovery-codes/regenerate operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-register-begin",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/register/begin\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/register/begin operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "action.post.auth-register-complete",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/auth.ts",
+      "anchor": "\"/auth/register/complete\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /auth/register/complete operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.catalog-read",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'catalog.read'"
+    },
+    "behavior": "The catalog.read permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "catalog.read"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.ingest-write",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'ingest.write'"
+    },
+    "behavior": "The ingest.write permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.mcp-tool-search",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'mcp.tool.search'"
+    },
+    "behavior": "The mcp.tool.search permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "mcp.tool.search"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.mcp-tool-stats",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'mcp.tool.stats'"
+    },
+    "behavior": "The mcp.tool.stats permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "mcp.tool.stats"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.mcp-use",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'mcp.use'"
+    },
+    "behavior": "The mcp.use permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "mcp.use"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.plugins-manage",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'plugins.manage'"
+    },
+    "behavior": "The plugins.manage permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.profiles-manage",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'profiles.manage'"
+    },
+    "behavior": "The profiles.manage permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "profiles.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "permission.settings-manage",
+    "kind": "permission",
+    "source": {
+      "path": "backend/migrations/0002_rbac_prefs.sql",
+      "anchor": "'settings.manage'"
+    },
+    "behavior": "The settings.manage permission independently gates its seeded application capability.",
+    "dimensions": {
+      "permissions": [
+        "settings.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "planned:phase-4"
+    ]
+  },
+  {
+    "id": "state.auth-authenticated",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "<Routes>"
+    },
+    "behavior": "Users receive the current authenticated state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "authenticated"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "state.auth-unauthenticated",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "<Login />"
+    },
+    "behavior": "Users receive the current unauthenticated state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "unauthenticated"
+      ]
+    },
+    "owner": {
+      "requirement": "SHEL-04",
+      "phase": 4
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "route.index",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "index"
+    },
+    "behavior": "Authenticated users land on the current dashboard.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "DASH-01",
+      "phase": 5
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "route.search",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/search\""
+    },
+    "behavior": "Authenticated users can open the current /search route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "SRCH-01",
+      "phase": 5
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "route.title-param",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/title/:id\""
+    },
+    "behavior": "Authenticated users can open the current /title/:id route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-01",
+      "phase": 5
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "action.del.episodes-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/episodes/${ep.id}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /episodes/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.del.episodes-param-watch-date-paramparam",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/episodes/${episodeId}/watch?date=${encodeURIComponent(date)}${scopeQ()}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /episodes/:param/watch?date=:param:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.del.tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "`/tags/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.del.titles-param-poster",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ti.id}/poster`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /titles/:param/poster operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.del.titles-param-seasons-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ctl.titleId}/seasons/${current.season}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /titles/:param/seasons/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.del.titles-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /titles/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.del.titles-param-watch-date-paramparam",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/watch?date=${encodeURIComponent(date)}${scopeQ()}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /titles/:param/watch?date=:param:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.episodes-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/episodes/${ep.id}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /episodes/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.episodes-param-watch",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/episodes/${episodeId}/watch`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /episodes/:param/watch operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.tags",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/TagChips.tsx",
+      "anchor": "\"/tags\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /tags operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.titles-param-enrich",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/enrich`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/:param/enrich operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.titles-param-seasons-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ctl.titleId}/seasons/${current.season}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/:param/seasons/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.titles-param-seasons-param-watch",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/seasons/${season}/watch`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/:param/seasons/:param/watch operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.titles-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.post.titles-param-watch",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/watch`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/:param/watch operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "frontend/src/pages/TitleDetail.test.tsx"
+    ]
+  },
+  {
+    "id": "action.put.titles-param-platform-override",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/platform-override`"
+    },
+    "behavior": "Authorized users can invoke the existing PUT /titles/:param/platform-override operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.put.titles-param-unknown",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/ui.tsx",
+      "anchor": "`/titles/${delId}/unknown`"
+    },
+    "behavior": "Authorized users can invoke the existing PUT /titles/:param/unknown operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "action.upload.titles-param-poster",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ti.id}/poster`"
+    },
+    "behavior": "Authorized users can invoke the existing UPLOAD /titles/:param/poster operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "TITL-04",
+      "phase": 5
+    },
+    "evidence": [
+      "planned:phase-5"
+    ]
+  },
+  {
+    "id": "route.genre-param",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/genre/:id\""
+    },
+    "behavior": "Authenticated users can open the current /genre/:id route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ANLY-01",
+      "phase": 6
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "route.overviews",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/overviews\""
+    },
+    "behavior": "Authenticated users can open the current /overviews route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ANLY-01",
+      "phase": 6
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "route.person-param",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/person/:id\""
+    },
+    "behavior": "Authenticated users can open the current /person/:id route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ANLY-01",
+      "phase": 6
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "state.partial",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/pages/Dashboard.tsx",
+      "anchor": "providers.loading ?"
+    },
+    "behavior": "Users receive the current partial state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "partial"
+      ]
+    },
+    "owner": {
+      "requirement": "ANLY-05",
+      "phase": 6
+    },
+    "evidence": [
+      "planned:phase-6"
+    ]
+  },
+  {
+    "id": "route.settings",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/settings\""
+    },
+    "behavior": "Authenticated users can open the current /settings route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-01",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "action.put.preferences",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "\"/preferences\""
+    },
+    "behavior": "Authorized users can invoke the existing PUT /preferences operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "settings.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "preference.accent",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "accent: string;"
+    },
+    "behavior": "Users can retain the current accent preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.cinema-add",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "cinemaAdd?: boolean;"
+    },
+    "behavior": "Users can retain the current cinemaAdd preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.dashboard-layout",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "dashboard_layout?: DashboardLayout;"
+    },
+    "behavior": "Users can retain the current dashboard_layout preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.default-profile",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "default_profile: string;"
+    },
+    "behavior": "Users can retain the current default_profile preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.expert",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "expert?: boolean;"
+    },
+    "behavior": "Users can retain the current expert preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.language",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "language: string;"
+    },
+    "behavior": "Users can retain the current language preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.theme",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "theme: \"light\" | \"dark\" | \"system\";"
+    },
+    "behavior": "Users can retain the current theme preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "preference.unknown-pos",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "unknown_pos?: { month?: number; day?: number };"
+    },
+    "behavior": "Users can retain the current unknown_pos preference through the layered preference model.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx"
+    ]
+  },
+  {
+    "id": "route.profiles",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/profiles\""
+    },
+    "behavior": "Authenticated users can open the current /profiles route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-03",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "action.del.profiles-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Profiles.tsx",
+      "anchor": "`/profiles/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /profiles/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "profiles.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-03",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.del.profiles-param-avatar",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Profiles.tsx",
+      "anchor": "`/profiles/${id}/avatar`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /profiles/:param/avatar operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "profiles.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-03",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.patch.profiles-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Profiles.tsx",
+      "anchor": "`/profiles/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing PATCH /profiles/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "profiles.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-03",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.profiles",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Profiles.tsx",
+      "anchor": "\"/profiles\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /profiles operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "profiles.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-03",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.upload.profiles-param-avatar",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Profiles.tsx",
+      "anchor": "`/profiles/${id}/avatar`"
+    },
+    "behavior": "Authorized users can invoke the existing UPLOAD /profiles/:param/avatar operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "profiles.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-03",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "route.imports",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/imports\""
+    },
+    "behavior": "Authenticated users can open the current /imports route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "action.del.connections-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "`/connections/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /connections/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/connections\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-libraries",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/connections/libraries\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/libraries operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-param-clear",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "`/connections/${id}/clear`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/:param/clear operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-param-sync",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "`/connections/${id}/sync`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/:param/sync operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-param-trakt-authorize",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "`/connections/${device.target}/trakt-authorize`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/:param/trakt-authorize operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-trakt-device-code",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/connections/trakt/device-code\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/trakt/device-code operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-trakt-device-token",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/connections/trakt/device-token\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/trakt/device-token operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.titles-param-trakt-sync",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${id}/trakt-sync`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/:param/trakt-sync operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.put.connections-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "`/connections/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing PUT /connections/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.del.tokens-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/AccountSecurity.tsx",
+      "anchor": "`/tokens/${id}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /tokens/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.plugins-param-enable",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "`/plugins/${id}/enable`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /plugins/:param/enable operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.scrobble-sessions-param-episode",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/EpisodePicker.tsx",
+      "anchor": "`/scrobble/sessions/${session.id}/episode`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /scrobble/sessions/:param/episode operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.tokens",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/AccountSecurity.tsx",
+      "anchor": "\"/tokens\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /tokens operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.put.plugins-param-secrets",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "`/plugins/${id}/secrets`"
+    },
+    "behavior": "Authorized users can invoke the existing PUT /plugins/:param/secrets operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.put.scrobble-account-map",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/scrobble/account-map\""
+    },
+    "behavior": "Authorized users can invoke the existing PUT /scrobble/account-map operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.put.scrobble-settings",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "\"/scrobble/settings\""
+    },
+    "behavior": "Authorized users can invoke the existing PUT /scrobble/settings operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "plugins.manage"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-06",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.del.titles-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/ui.tsx",
+      "anchor": "`/titles/${delId}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /titles/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.del.titles-param-rename",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ti.id}/rename`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /titles/:param/rename operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.patch.household",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "\"/household\""
+    },
+    "behavior": "Authorized users can invoke the existing PATCH /household operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.patch.titles-param-rename",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ti.id}/rename`"
+    },
+    "behavior": "Authorized users can invoke the existing PATCH /titles/:param/rename operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.attribution-log-bulk-platform",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "\"/attribution-log/bulk-platform\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /attribution-log/bulk-platform operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.attribution-log-param-reattribute",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "`/attribution-log/${titleId}/reattribute`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /attribution-log/:param/reattribute operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.attribution-log-reattribute-all",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "\"/attribution-log/reattribute-all\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /attribution-log/reattribute-all operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.catalog-add-film",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/AddCinemaFilm.tsx",
+      "anchor": "\"/catalog/add-film\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /catalog/add-film operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.ingest-rebuild-agg",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/ingest/rebuild-agg\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /ingest/rebuild-agg operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.ingest-reset-all",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Settings.tsx",
+      "anchor": "\"/ingest/reset-all\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /ingest/reset-all operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.stats-unfinished-param-dismiss",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Dashboard.tsx",
+      "anchor": "`/stats/unfinished/${u.id}/dismiss`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /stats/unfinished/:param/dismiss operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.titles-enrich-missing",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/lib/lazyEnrich.ts",
+      "anchor": "\"/titles/enrich-missing\""
+    },
+    "behavior": "Authorized users can invoke the existing POST /titles/enrich-missing operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.put.titles-param-kind",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "`/titles/${ti.id}/kind`"
+    },
+    "behavior": "Authorized users can invoke the existing PUT /titles/:param/kind operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.upload.ingest-import",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/pages/Imports.tsx",
+      "anchor": "\"/ingest/import\""
+    },
+    "behavior": "Authorized users can invoke the existing UPLOAD /ingest/import operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-07",
+      "phase": 7
+    },
+    "evidence": [
+      "planned:phase-7"
+    ]
+  },
+  {
+    "id": "locale.de",
+    "kind": "locale",
+    "source": {
+      "path": "frontend/src/lib/i18n.tsx",
+      "anchor": "{ code: \"de\", native: \"Deutsch\", english: \"German\", Flag: FlagDE }"
+    },
+    "behavior": "Users can operate WatchVault in the de locale.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-05",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "locale.en",
+    "kind": "locale",
+    "source": {
+      "path": "frontend/src/lib/i18n.tsx",
+      "anchor": "{ code: \"en\", native: \"English\", english: \"English\", Flag: FlagGB }"
+    },
+    "behavior": "Users can operate WatchVault in the en locale.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-05",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "locale.es",
+    "kind": "locale",
+    "source": {
+      "path": "frontend/src/lib/i18n.tsx",
+      "anchor": "{ code: \"es\", native: \"Español\", english: \"Spanish\", Flag: FlagES }"
+    },
+    "behavior": "Users can operate WatchVault in the es locale.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-05",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "locale.fr",
+    "kind": "locale",
+    "source": {
+      "path": "frontend/src/lib/i18n.tsx",
+      "anchor": "{ code: \"fr\", native: \"Français\", english: \"French\", Flag: FlagFR }"
+    },
+    "behavior": "Users can operate WatchVault in the fr locale.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-05",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "locale.it",
+    "kind": "locale",
+    "source": {
+      "path": "frontend/src/lib/i18n.tsx",
+      "anchor": "{ code: \"it\", native: \"Italiano\", english: \"Italian\", Flag: FlagIT }"
+    },
+    "behavior": "Users can operate WatchVault in the it locale.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-05",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "locale.nl",
+    "kind": "locale",
+    "source": {
+      "path": "frontend/src/lib/i18n.tsx",
+      "anchor": "{ code: \"nl\", native: \"Nederlands\", english: \"Dutch\", Flag: FlagNL }"
+    },
+    "behavior": "Users can operate WatchVault in the nl locale.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-05",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "state.app-loading",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "<Loading />"
+    },
+    "behavior": "Users receive the current loading state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "public"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "loading"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-06",
+      "phase": 8
+    },
+    "evidence": [
+      "frontend/src/App.test.tsx"
+    ]
+  },
+  {
+    "id": "state.empty",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/components/ui.tsx",
+      "anchor": "export function Empty"
+    },
+    "behavior": "Users receive the current empty state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "empty"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-07",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "state.error",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/components/ui.tsx",
+      "anchor": "export function ErrorState"
+    },
+    "behavior": "Users receive the current error state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-07",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  },
+  {
+    "id": "state.forbidden",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/pages/TitleDetail.tsx",
+      "anchor": "const canEdit = can(\"ingest.write\");"
+    },
+    "behavior": "Users receive the current forbidden state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "forbidden"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-07",
+      "phase": 8
+    },
+    "evidence": [
+      "frontend/src/pages/TitleDetail.test.tsx"
+    ]
+  },
+  {
+    "id": "state.loading",
+    "kind": "state",
+    "source": {
+      "path": "frontend/src/components/ui.tsx",
+      "anchor": "export function Loading"
+    },
+    "behavior": "Users receive the current loading state treatment when its source condition applies.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "loading"
+      ]
+    },
+    "owner": {
+      "requirement": "QUAL-07",
+      "phase": 8
+    },
+    "evidence": [
+      "planned:phase-8"
+    ]
+  }
+]
