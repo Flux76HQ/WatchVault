@@ -14,7 +14,6 @@ from app.version import VERSION, read_version  # noqa: E402
 
 
 def test_runtime_version_matches_root_version():
-    assert VERSION == "1.0.1"
     assert VERSION == (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
 
@@ -32,12 +31,12 @@ def test_health_and_config_preserve_shape(monkeypatch):
 
     health = client.get("/api/health")
     assert health.status_code == 200
-    assert health.get_json() == {"status": "ok", "db": True, "version": "1.0.1"}
+    assert health.get_json() == {"status": "ok", "db": True, "version": VERSION}
 
     config = client.get("/api/meta/config")
     assert config.status_code == 200
     assert config.get_json() == {
-        "version": "1.0.1",
+        "version": VERSION,
         "rp_id": meta.get_config().RP_ID,
         "app": meta.get_config().RP_NAME,
     }
