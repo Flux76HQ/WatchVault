@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -52,9 +53,14 @@ _APP_ID_PLATFORM = {
     "com.viaplay.skyshowtime.SkyShowtime": "skyshowtime",
     "nl.nlziet.app": "nlziet",
     "nl.nlziet.nlziet": "nlziet",
+    "com.plexapp.plex": "plex",
     "com.apple.tv": "appletv",
     "com.apple.TVWatchList": "appletv",
 }
+
+# tvOS Now Playing metadata for an episode (Plex and other apps): the title is the
+# *episode* name, the artist the *series* and the album "Season N" / "Seizoen N".
+_SEASON_ALBUM = re.compile(r"^\s*(?:season|seizoen|s)\s*(\d+)\s*$", re.IGNORECASE)
 
 
 def _platform_from_app_id(app_id: Optional[str]) -> Optional[str]:
@@ -218,6 +224,18 @@ def parse_generic_payload(body: dict) -> Optional[ScrobbleEvent]:
     season = _int(body.get("season"))
     episode = _int(body.get("episode"))
     kind = (body.get("kind") or ("series" if episode is not None else "movie")).lower()
+    episode_name = body.get("episode_name")
+    # Apple TV exposes no season/episode numbers, only artist (series) + album
+    # ("Season N") next to the episode title. Swap them into series/episode terms;
+    # the episode number is resolved later from the series' TMDB episode list.
+    # An explicit season/episode from the payload (e.g. Prime) always wins.
+    artist = (body.get("artist") or "").strip()
+    album_season = _SEASON_ALBUM.match(str(body.get("album") or ""))
+    if artist and album_season and season is None and episode is None:
+        season = int(album_season.group(1))
+        episode_name = title
+        title = artist
+        kind = "series"
     position_s = _int(body.get("position_seconds"))
     duration_s = _int(body.get("duration_seconds"))
     progress = _num(body.get("progress_percent"))
@@ -241,7 +259,7 @@ def parse_generic_payload(body: dict) -> Optional[ScrobbleEvent]:
         account_label=(body.get("account") or "").strip(),
         platform_key=platform,
         raw_title=title, kind=kind, season=season, episode=episode,
-        episode_name=body.get("episode_name"),
+        episode_name=episode_name,
         year=_int(body.get("year")), tmdb_id=_int(body.get("tmdb_id")),
         progress_percent=progress,
         position_seconds=position_s, duration_seconds=duration_s,
@@ -366,6 +384,24 @@ def _maybe_enqueue_enrich(cur, title_id: str) -> None:
     )
 
 
+def _lookup_episode(cur, title_id, season: int, episode_name: str) -> Optional[dict]:
+    """Find the episode number for a season + episode name in the series' TMDB
+    episode list (title_episodes). Returns None until enrichment has populated the
+    series or when no name in that season matches."""
+    wanted = normalize_text(episode_name or "")
+    if not wanted:
+        return None
+    cur.execute(
+        "SELECT id, episode, name FROM title_episodes "
+        "WHERE title_id = %s AND season = %s AND episode > 0",
+        (title_id, season),
+    )
+    for row in cur.fetchall() or []:
+        if normalize_text(row["name"] or "") == wanted:
+            return row
+    return None
+
+
 def _commit_session_watch(cur, session_id, user_id, provider_id, evt: ScrobbleEvent,
                           eff_season, eff_episode, eff_episode_name, eff_kind,
                           duration_seconds) -> None:
@@ -483,6 +519,18 @@ def handle_scrobble(household_id: str, evt: ScrobbleEvent, token_user_id: str,
                 cur.execute("UPDATE scrobble_sessions SET title_id = %s WHERE id = %s",
                             (title_id, session_id))
                 _maybe_enqueue_enrich(cur, title_id)
+                # Season + episode name known but no number (Apple TV): look it up.
+                # Retried every tick, so it resolves once enrichment has run.
+                if (eff_kind == "series" and eff_season is not None
+                        and eff_episode is None and eff_episode_name):
+                    found = _lookup_episode(cur, title_id, eff_season, eff_episode_name)
+                    if found:
+                        eff_episode = found["episode"]
+                        eff_episode_name = found["name"] or eff_episode_name
+                        cur.execute(
+                            "UPDATE scrobble_sessions SET episode = %s, episode_name = %s, "
+                            "episode_id = %s WHERE id = %s",
+                            (eff_episode, eff_episode_name, found["id"], session_id))
 
         # How long this session was watched (for a durationless live-TV commit).
         watched_seconds = _watch_seconds(sess_started_at, evt.position_seconds, now_utc())

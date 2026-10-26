@@ -90,6 +90,7 @@ actions:
       duration: "{{ (trigger.from_state.attributes.get('media_duration') if use_from else state_attr(wv_entity, 'media_duration')) | float(0) }}"
       title: "{{ ((trigger.from_state.attributes.get('media_title') if use_from else state_attr(wv_entity, 'media_title')) or (trigger.from_state.attributes.get('media_artist') if use_from else state_attr(wv_entity, 'media_artist')) or '') | string | trim }}"
       artist: "{{ ((trigger.from_state.attributes.get('media_artist') if use_from else state_attr(wv_entity, 'media_artist')) or '') | string | trim }}"
+      album: "{{ ((trigger.from_state.attributes.get('media_album_name') if use_from else state_attr(wv_entity, 'media_album_name')) or '') | string | trim }}"
   - variables:
       position: >-
         {% set base = (trigger.from_state.attributes.get('media_position') if use_from else state_attr(wv_entity, 'media_position')) | float(0) %}
@@ -104,7 +105,7 @@ actions:
       platform: >-
         {% set m = {'com.wbd.hbomax': 'hbomax', 'com.netflix.Netflix': 'netflix',
             'com.disney.disneyplus': 'disney', 'com.amazon.aiv.AIVApp': 'prime',
-            'nl.rtl.videoland.v2': 'videoland',
+            'nl.rtl.videoland.v2': 'videoland', 'com.plexapp.plex': 'plex',
             'com.viaplay.skyshowtime.SkyShowtime': 'skyshowtime',
             'nl.nlziet.app': 'nlziet', 'nl.nlziet.nlziet': 'nlziet',
             'com.apple.tv': 'appletv', 'com.apple.TVWatchList': 'appletv'} %}
@@ -126,7 +127,8 @@ actions:
       payload: >-
         {{ ({'event': event, 'source': 'homeassistant', 'title': title,
              'kind': kind,
-             'platform': platform, 'app_id': app_id, 'progress_percent': progress | float(0),
+             'platform': platform, 'app_id': app_id,
+             'artist': artist, 'album': album, 'progress_percent': progress | float(0),
              'position_seconds': position | int(0),
              'duration_seconds': duration | int(0),
              'dedup_key': ('appletv:' ~ content_id) if content_id else '',

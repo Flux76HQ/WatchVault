@@ -774,3 +774,104 @@ def test_handle_scrobble_upsert_updates_attribution_on_later_tick(monkeypatch):
     assert "season = CASE WHEN scrobble_sessions.manual_episode THEN scrobble_sessions.season ELSE EXCLUDED.season END" in upsert
     assert "episode = CASE WHEN scrobble_sessions.manual_episode THEN scrobble_sessions.episode ELSE EXCLUDED.episode END" in upsert
     assert "episode_name = CASE WHEN scrobble_sessions.manual_episode THEN scrobble_sessions.episode_name ELSE EXCLUDED.episode_name END" in upsert
+
+
+# ── Apple TV episode metadata (Plex app: title=episode, artist=series, album=Season N)
+
+def _appletv_plex_payload(**over):
+    body = {
+        "event": "update", "source": "homeassistant", "title": "Hollywood Ending",
+        "artist": "NCIS: Origins", "album": "Season 2", "kind": "series",
+        "platform": "plex", "app_id": "com.plexapp.plex",
+        "position_seconds": 306, "duration_seconds": 2597,
+        "dedup_key": "appletv:69cbdbdadd45a4557df13f55",
+    }
+    body.update(over)
+    return body
+
+
+def test_parse_generic_appletv_season_album_swaps_to_series():
+    evt = parse_generic_payload(_appletv_plex_payload())
+    assert evt.raw_title == "NCIS: Origins"
+    assert evt.episode_name == "Hollywood Ending"
+    assert evt.season == 2 and evt.episode is None
+    assert evt.kind == "series"
+    assert evt.platform_key == "plex"
+    assert evt.dedup_key == "appletv:69cbdbdadd45a4557df13f55"
+
+
+def test_parse_generic_appletv_long_episode_is_still_series():
+    # The blueprint's duration heuristic calls >70 min a movie; the season album wins.
+    evt = parse_generic_payload(_appletv_plex_payload(kind="movie", duration_seconds=5400))
+    assert evt.kind == "series"
+
+
+def test_parse_generic_dutch_season_album():
+    evt = parse_generic_payload(_appletv_plex_payload(album="Seizoen 12"))
+    assert evt.season == 12
+
+
+def test_parse_generic_plex_app_id_maps_to_plex_platform():
+    evt = parse_generic_payload({"title": "Heat", "event": "play",
+                                 "app_id": "com.plexapp.plex"})
+    assert evt.platform_key == "plex"
+
+
+def test_parse_generic_explicit_season_episode_beats_album():
+    evt = parse_generic_payload(_appletv_plex_payload(season=1, episode=4))
+    assert evt.raw_title == "Hollywood Ending"
+    assert (evt.season, evt.episode) == (1, 4)
+
+
+def test_parse_generic_non_season_album_is_left_alone():
+    evt = parse_generic_payload({"title": "Song", "event": "play",
+                                 "artist": "Band", "album": "Greatest Hits"})
+    assert evt.raw_title == "Song"
+    assert evt.season is None and evt.episode_name is None
+
+
+class EpisodeCursor(SmartCursor):
+    """SmartCursor whose title_episodes table holds a season of NCIS: Origins."""
+    EPISODES = [
+        {"id": "ep-a", "episode": 1, "name": "Pilot"},
+        {"id": "ep-b", "episode": 7, "name": "Hollywood Ending"},
+    ]
+
+    def execute(self, sql, params=None):
+        super().execute(sql, params)
+        if "SELECT id, episode, name FROM title_episodes" in " ".join(sql.split()):
+            self._rows = list(self.EPISODES) if params[1] == 2 else []
+
+    def fetchall(self):
+        rows, self._rows = getattr(self, "_rows", []), []
+        return rows
+
+
+def _run_appletv_tick(monkeypatch, cur, **over):
+    monkeypatch.setattr(_scrobble, "connection", _fake_conn(cur))
+    monkeypatch.setattr(
+        _scrobble, "ingest_events",
+        lambda *a, **k: {"inserted": 1, "duplicates": 0, "titles_created": 0,
+                         "titles_touched": 1, "series_title_ids": []})
+    evt = parse_generic_payload(_appletv_plex_payload(**over))
+    return _scrobble.handle_scrobble("hh-1", evt, "token-user")
+
+
+def test_handle_scrobble_appletv_resolves_episode_number(monkeypatch):
+    cur = EpisodeCursor()
+    _run_appletv_tick(monkeypatch, cur)
+    assert ("series", "ncis origins") in cur.titles    # series, not the episode name
+    assert not any(k[1] == "hollywood ending" for k in cur.titles)
+    assert any("SET episode = %s" in " ".join(s.split()) for s in cur.executed)
+
+
+def test_handle_scrobble_appletv_unknown_episode_leaves_number_empty(monkeypatch):
+    cur = EpisodeCursor()
+    _run_appletv_tick(monkeypatch, cur, title="Some Other Episode")
+    assert not any("SET episode = %s" in " ".join(s.split()) for s in cur.executed)
+
+
+def test_handle_scrobble_appletv_season_without_episodes_is_a_noop(monkeypatch):
+    cur = EpisodeCursor()
+    _run_appletv_tick(monkeypatch, cur, album="Season 9")   # no season 9 rows yet
+    assert not any("SET episode = %s" in " ".join(s.split()) for s in cur.executed)

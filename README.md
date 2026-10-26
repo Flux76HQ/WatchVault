@@ -253,6 +253,7 @@ Then create an automation from the blueprint and fill in the inputs.
 | `platform` | Provider key derived from `app_id` (`com.wbd.hbomax`→`hbomax`, `com.apple.*`→`appletv`, …). |
 | `app_id` | The raw Home Assistant app id (e.g. NLZiet = `nl.nlziet.nlziet`). Forwarded so the backend can map new services to a provider itself when `platform` is empty — no blueprint re-import needed. |
 | `kind` | `series` when `media_duration ≤ 4200s` (≤ 70 min), otherwise `movie`. Apple TV exposes no season/episode, so duration is used as a heuristic. |
+| `artist`, `album` | The raw `media_artist` / `media_album_name`. Apple TV reports an episode as title = episode name, artist = series, album = `Season N` (Plex, …); the backend turns that into series + season + episode name and looks the episode number up in the series' TMDB episode list (retried each tick until the series is enriched). |
 | `progress_percent`, `position_seconds`, `duration_seconds` | Live progress; position is extrapolated from `media_position` + elapsed time while playing. |
 | `dedup_key` | `appletv:<media_content_id>` — stable per playback so repeats don't create duplicate history. |
 | `account` | The optional account label. |
