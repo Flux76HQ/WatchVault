@@ -198,7 +198,8 @@ jobs:
   publish:
     name: Publish validated image
     needs: [gate]
-    if: needs.gate.result == 'success' && github.event_name == 'push'
+    # always(): without it the implicit success() also counts the skipped baselines job upstream of the gate.
+    if: ${{ always() && needs.gate.result == 'success' && github.event_name == 'push' }}
     permissions:
       contents: read
       packages: write
