@@ -1,32 +1,58 @@
-/* ── WatchVault design tokens ───────────────────────────────────────────────
-   Semantic tokens only — components never hard-code raw colors. Appearance
-   (Light/Dark/System), accent personalization and glass materials all flow
-   from here, per the zbonline design framework. */
+/* ── WatchVault design tokens — "cinema noir" ───────────────────────────────
+   Semantic tokens only: components never hard-code raw colors. Dark is the
+   native mode (a dim auditorium, artwork is the light source); light is a warm
+   programme-paper variant of the same system. Appearance (Light/Dark/System)
+   and the personal accent flow from here. The accent is a single colour set on
+   :root at runtime; everything else derives from it. */
 
 :root {
-  /* Light (default) */
-  --bg: #f5f5f7;
-  --bg-elev: #ffffff;
-  --surface: rgba(255, 255, 255, 0.62);
-  --surface-strong: rgba(255, 255, 255, 0.85);
-  --text: #1d1d1f;
-  --text-secondary: #6e6e73;
-  --text-tertiary: #8e8e93;
-  --hairline: rgba(0, 0, 0, 0.10);
-  --hairline-strong: rgba(0, 0, 0, 0.16);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.08);
+  /* Light — warm paper, ink text */
+  --bg: #f4f1ec;
+  --bg-deep: #ebe7e0;
+  --bg-elev: #fdfcfa;
+  --bg-raised: #ffffff;
+  --surface: rgba(253, 252, 250, 0.72);
+  --surface-strong: rgba(253, 252, 250, 0.94);
+  --text: #17161a;
+  --text-secondary: #5f5c66;
+  --text-tertiary: #6a6772;
+  --hairline: rgba(23, 22, 26, 0.10);
+  --hairline-strong: rgba(23, 22, 26, 0.20);
+  --shadow: 0 1px 2px rgba(23, 22, 26, 0.06), 0 18px 40px -18px rgba(23, 22, 26, 0.28);
+  --shadow-sm: 0 1px 2px rgba(23, 22, 26, 0.06), 0 6px 16px -10px rgba(23, 22, 26, 0.22);
+  --shadow-pop: 0 2px 6px rgba(23, 22, 26, 0.10), 0 24px 48px -16px rgba(23, 22, 26, 0.34);
 
   /* Accent — overridable per user (set on :root at runtime) */
-  --accent: #0a84ff;
+  --accent: #f0a21a;
   --accent-hover: color-mix(in srgb, var(--accent) 86%, black);
   --accent-subtle: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-readable: color-mix(in srgb, var(--accent) 78%, black);
-  --accent-text: #ffffff;
+  --accent-readable: color-mix(in srgb, var(--accent) 50%, black);
+  --accent-text: #17161a; /* text on an accent fill; flipped by applyTheme from the accent's luminance */
+  --accent-glow: color-mix(in srgb, var(--accent) 26%, transparent);
 
-  /* Glass material */
-  --glass-blur: 20px;
-  --glass-border: rgba(255, 255, 255, 0.35);
+  /* Status — independent of the accent, so a chosen accent never swallows them */
+  --tone-ok: #1f8a4c;
+  --tone-warn: #b7791f;
+  --tone-danger: #d12f2f;
+  --tone-info: #2c6fd1;
+
+  /* Cinema atmosphere */
+  --scrim: linear-gradient(to top, rgba(10, 9, 12, 0.88), rgba(10, 9, 12, 0.35) 55%, transparent);
+  --poster-edge: inset 0 0 0 1px rgba(23, 22, 26, 0.12);
+  --grain-opacity: 0.035;
+
+  /* Glass material — only for what floats: top bar, tab bar, menus, dialogs */
+  --glass-blur: 22px;
+  --glass-border: rgba(23, 22, 26, 0.08);
+
+  /* Type */
+  --font-body: "Avenir Next", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: "Fraunces Variable", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
 
   /* Spacing (8pt grid) */
   --space-1: 4px;
@@ -37,48 +63,74 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  /* Radius */
+  /* Radius — posters stay crisp like film stills; chrome is softer */
+  --radius-xs: 6px;
   --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 22px;
+  --radius: 14px;
+  --radius-lg: 20px;
   --radius-pill: 999px;
+
+  /* Aliases kept for older rules that referenced these names */
+  --border: var(--hairline);
+  --muted: var(--text-secondary);
+  --surface-2: color-mix(in srgb, var(--text) 8%, transparent);
 
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #000000;
-  --bg-elev: #1c1c1e;
-  --surface: rgba(28, 28, 30, 0.58);
-  --surface-strong: rgba(28, 28, 30, 0.9);
-  --text: #f5f5f7;
-  --text-secondary: #aeaeb2;
-  --text-tertiary: #8e8e93;
-  --hairline: rgba(255, 255, 255, 0.12);
-  --hairline-strong: rgba(255, 255, 255, 0.20);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --accent-readable: color-mix(in srgb, var(--accent) 55%, white);
+  --bg: #0b0a0d;
+  --bg-deep: #060508;
+  --bg-elev: #151419;
+  --bg-raised: #1d1c22;
+  --surface: rgba(21, 20, 25, 0.66);
+  --surface-strong: rgba(21, 20, 25, 0.94);
+  --text: #f3f1ee;
+  --text-secondary: #b1adb8;
+  --text-tertiary: #8a8693;
+  --hairline: rgba(255, 255, 255, 0.09);
+  --hairline-strong: rgba(255, 255, 255, 0.18);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 22px 48px -20px rgba(0, 0, 0, 0.85);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px -12px rgba(0, 0, 0, 0.8);
+  --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.5), 0 28px 56px -16px rgba(0, 0, 0, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --accent-readable: color-mix(in srgb, var(--accent) 70%, white);
+  --accent-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+  --tone-ok: #4cd08a;
+  --tone-warn: #f2b84b;
+  --tone-danger: #ff6b6b;
+  --tone-info: #6ea8ff;
+  --poster-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+  --grain-opacity: 0.05;
   color-scheme: dark;
 }
 
-/* System mode (no explicit data-theme) follows the OS */
+/* System mode (no explicit data-theme) follows the OS — keep in sync with the dark block above */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #000000;
-    --bg-elev: #1c1c1e;
-    --surface: rgba(28, 28, 30, 0.58);
-    --surface-strong: rgba(28, 28, 30, 0.9);
-    --text: #f5f5f7;
-    --text-secondary: #aeaeb2;
-    --text-tertiary: #8e8e93;
-    --hairline: rgba(255, 255, 255, 0.12);
-    --hairline-strong: rgba(255, 255, 255, 0.20);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.14);
-    --accent-readable: color-mix(in srgb, var(--accent) 55%, white);
+    --bg: #0b0a0d;
+    --bg-deep: #060508;
+    --bg-elev: #151419;
+    --bg-raised: #1d1c22;
+    --surface: rgba(21, 20, 25, 0.66);
+    --surface-strong: rgba(21, 20, 25, 0.94);
+    --text: #f3f1ee;
+    --text-secondary: #b1adb8;
+    --text-tertiary: #8a8693;
+    --hairline: rgba(255, 255, 255, 0.09);
+    --hairline-strong: rgba(255, 255, 255, 0.18);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 22px 48px -20px rgba(0, 0, 0, 0.85);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 20px -12px rgba(0, 0, 0, 0.8);
+    --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.5), 0 28px 56px -16px rgba(0, 0, 0, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --accent-readable: color-mix(in srgb, var(--accent) 70%, white);
+    --accent-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+    --tone-ok: #4cd08a;
+    --tone-warn: #f2b84b;
+    --tone-danger: #ff6b6b;
+    --tone-info: #6ea8ff;
+    --poster-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+    --grain-opacity: 0.05;
     color-scheme: dark;
   }
 }

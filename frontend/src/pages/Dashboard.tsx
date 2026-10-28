@@ -30,6 +30,8 @@ export function Dashboard() {
   const [editing, setEditing] = useState(false);
   const [dragId, setDragId] = useState<BlockId | null>(null);
   const [overId, setOverId] = useState<BlockId | null>(null);
+  // Poster of the latest watched title, reported by the monthly block; it lights the page.
+  const [ambient, setAmbient] = useState<string | null>(null);
 
   const summary = useFetch<any>(() => api.get("/stats/summary", { profile: scope }), [scope]);
   const providers = useFetch<any[]>(() => api.get("/stats/providers", { profile: scope, range }), [scope, range]);
@@ -70,7 +72,7 @@ export function Dashboard() {
     trend: {
       labelKey: "dashboard.blockTrend",
       node: (
-        <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card trend-card" style={{ marginBottom: 24 }}>
           <div className="row">
             <div className="col" style={{ gap: 2 }}>
               <span className="headline">{t(recentTitle)}</span>
@@ -92,7 +94,7 @@ export function Dashboard() {
     platforms: {
       labelKey: "dashboard.blockPlatforms",
       node: (
-        <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card platform-card" style={{ marginBottom: 24 }}>
           <div className="row" style={{ marginBottom: 4 }}>
             <span className="headline">{t("dashboard.byPlatform")}</span>
             <div className="spacer" style={{ flex: 1 }} />
@@ -118,7 +120,7 @@ export function Dashboard() {
         </div>
       ),
     },
-    monthly: { labelKey: "dashboard.blockMonthly", node: <MonthlyTitles scope={scope} /> },
+    monthly: { labelKey: "dashboard.blockMonthly", node: <MonthlyTitles scope={scope} onLead={setAmbient} /> },
   };
 
   // Resolve saved layout → ordered, expert-gated block ids via the shared
@@ -143,8 +145,9 @@ export function Dashboard() {
 
   return (
     <>
-      <div className="section-head">
-        <div className="col" style={{ gap: 2 }}>
+      {ambient && <div className="dash-ambient" aria-hidden="true" style={{ backgroundImage: `url(${JSON.stringify(ambient)})` }} />}
+      <div className="section-head dash-head">
+        <div className="col" style={{ gap: 6 }}>
           <h1 className="large-title">{t("nav.dashboard")}</h1>
           <span className="muted">{t("dashboard.overviewOf", { name: scopeName })}</span>
         </div>
@@ -283,11 +286,16 @@ function UnknownTitles({ scope }: { scope: string }) {
 // Isolated so paging months only re-renders this section (and not the Spark
 // chart / per-platform card above it), matching the Overviews experience.
 // Mirrors the Overviews "Bekeken per maand" section.
-function MonthlyTitles({ scope }: { scope: string }) {
+function MonthlyTitles({ scope, onLead }: { scope: string; onLead?: (poster: string | null) => void }) {
   const { t } = useT();
   const [month, setMonth] = useState(monthKey(new Date()));
   const { data, loading, error, reload } = useFetch<any[]>(
     () => api.get("/stats/month", { profile: scope, month }), [scope, month]);
+
+  // Only the current month's first poster lights the page; paging months leaves it alone.
+  const isCurrent = month === monthKey(new Date());
+  const lead = isCurrent ? (data?.find((i: any) => i.poster)?.poster ?? null) : undefined;
+  useEffect(() => { if (lead !== undefined) onLead?.(lead); }, [lead, onLead]);
 
   return (
     <Section title={t("overviews.watchedPerMonth")}
@@ -361,7 +369,7 @@ function NowPlaying({ scope }: { scope: string }) {
 
   return (
     <Section title={t("scrobble.nowPlaying")}>
-      <div className="card col" style={{ gap: 16, marginBottom: 24 }}>
+      <div className="card col np-card" style={{ marginBottom: 24 }}>
         {items.map((s: any) => {
           const sub = s.kind === "series" && s.season != null
             ? `S${s.season}·E${s.episode}${s.episode_name ? " · " + s.episode_name : ""}`
@@ -372,7 +380,8 @@ function NowPlaying({ scope }: { scope: string }) {
           const pct = Math.max(0, Math.min(100, Number(s.progress) || 0));
           const inner = (
             <>
-              <div className="poster" style={{ width: 46, flexShrink: 0, aspectRatio: "2 / 3", borderRadius: 8, overflow: "hidden" }}>
+              {s.poster && <span className="np-art" aria-hidden="true" style={{ backgroundImage: `url(${JSON.stringify(s.poster)})` }} />}
+              <div className="poster" style={{ width: 56, flexShrink: 0, aspectRatio: "2 / 3" }}>
                 {s.poster ? <img src={s.poster} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div className="ph" style={{ width: "100%", height: "100%" }} />}
               </div>

@@ -1,7 +1,7 @@
 {
   "name": "watchvault-frontend",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,6 +14,7 @@
     "validate:phase": "npm run test:contracts && node ../scripts/version.mjs check && node scripts/capabilities.mjs check && python -m pytest ../backend/tests && npm run build && npm run test -- --run && npm run test:e2e"
   },
   "dependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
     "@simplewebauthn/browser": "^11.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

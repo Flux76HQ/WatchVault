@@ -604,17 +604,25 @@ export function TitleDetail() {
 
   return (
     <>
-      <BackLink />
-
-      <div className="title-hero card" style={ti.backdrop ? {
-        backgroundImage: `linear-gradient(to top, var(--bg-elev), rgba(0,0,0,0.1)), url(${ti.backdrop})`,
-        backgroundSize: "cover", backgroundPosition: "center",
-      } : undefined}>
-        <div className="row" style={{ gap: 20, alignItems: "flex-end" }}>
-          <div className="poster" style={{ width: 130, flexShrink: 0 }}>
+      {/* Full-bleed hero: the backdrop (or, without one, the blurred poster) is the
+          light of the page; the poster, title and facts sit on its scrim. */}
+      <header className="title-hero">
+        {(ti.backdrop || ti.poster) && (
+          <div className={`title-hero-art ${ti.backdrop ? "" : "is-poster"}`} aria-hidden="true"
+            style={{ backgroundImage: `url(${JSON.stringify(ti.backdrop || ti.poster)})` }} />
+        )}
+        <div className="title-hero-top"><BackLink /></div>
+        <div className="title-hero-body">
+          <div className="poster title-hero-poster">
             {ti.poster ? <img src={ti.poster} alt={ti.title} /> : <div className="ph">{ti.title}</div>}
           </div>
-          <div className="col" style={{ gap: 8 }}>
+          <div className="col title-hero-info">
+            <div className="eyebrow title-hero-meta">
+              <span>{mediaBadge(t, ti)}</span>
+              {ti.year && <span>{ti.year}</span>}
+              {ti.runtime_minutes && <span>{t("title.min", { n: ti.runtime_minutes })}</span>}
+              {(ti.manual_title || ti.manual_poster) && <span>{t("title.edit.badge")}</span>}
+            </div>
             <div className="row" style={{ gap: 10, alignItems: "center" }}>
               <h1 className="large-title" style={{ margin: 0 }}>{ti.title}</h1>
               {canEdit && (
@@ -623,14 +631,6 @@ export function TitleDetail() {
                   <IconPencil width={16} height={16} />
                 </button>
               )}
-              {(ti.manual_title || ti.manual_poster) && (
-                <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{t("title.edit.badge")}</span>
-              )}
-            </div>
-            <div className="row wrap" style={{ gap: 8 }}>
-              <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{mediaBadge(t, ti)}</span>
-              {ti.year && <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{ti.year}</span>}
-              {ti.runtime_minutes && <span className="chip" style={{ minHeight: 0, padding: "2px 10px" }}>{t("title.min", { n: ti.runtime_minutes })}</span>}
             </div>
             <div className="chips">{ti.genres?.map((g: string) => (
               <Link key={g} to={`/search?genre=${encodeURIComponent(g)}&kind=${ti.kind}`} className="chip"
@@ -650,13 +650,13 @@ export function TitleDetail() {
               onChange={reload} />
           </div>
         </div>
-      </div>
+      </header>
 
       {canEdit && editing && (
         <TitleEditor ti={ti} onDone={() => { setEditing(false); reload(); }} />
       )}
 
-      {ti.overview && <p className="muted" style={{ margin: "20px 0" }}>{ti.overview}</p>}
+      {ti.overview && <p className="muted title-overview">{ti.overview}</p>}
 
       {/* Live now-playing for a movie: real-time progress mirrored from the
           dashboard, shown right on the title it belongs to (Expert mode). */}
@@ -712,7 +712,7 @@ export function TitleDetail() {
 
       {ti.cast?.length > 0 && (
         <>
-          <h2 className="title" style={{ margin: "8px 0 14px" }}>{t("common.cast")}</h2>
+          <h2 className="title" style={{ margin: "36px 0 14px" }}>{t("common.cast")}</h2>
           <div className="cast-row">
             {ti.cast.map((c: any, i: number) => <PersonCard key={c.id || i} c={c} />)}
           </div>
