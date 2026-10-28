@@ -301,7 +301,7 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 /* Grids */
 .stat-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .poster-grid { display: grid; gap: var(--space-5) var(--space-4); grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-.grid-2 { display: grid; gap: var(--space-4); grid-template-columns: 1fr 1fr; align-items: start; }
+.grid-2 { display: grid; gap: var(--space-4) var(--space-5); grid-template-columns: 1fr 1fr; align-items: start; margin-top: var(--space-7); }
 @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
 .filters-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 @media (max-width: 520px) {
@@ -898,3 +898,30 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
   .dash-head { flex-wrap: wrap; }
   .section-head { flex-wrap: wrap; row-gap: var(--space-2); }
 }
+
+/* ── Search: one big field, quiet filters ───────────────────────────────── */
+.search-bar {
+  display: flex; align-items: center; gap: var(--space-3);
+  min-height: 60px; padding: 0 var(--space-5);
+  background: var(--bg-elev); border: 1px solid var(--hairline-strong); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm); color: var(--text-tertiary); margin-bottom: var(--space-3);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.search-bar:focus-within { border-color: var(--accent); color: var(--accent-readable); box-shadow: 0 0 0 4px var(--accent-subtle), var(--shadow-sm); }
+.search-bar input {
+  border: 0; background: transparent; box-shadow: none; padding: 0; min-height: 56px;
+  font-family: var(--font-display); font-size: 1.35rem; font-weight: 500; letter-spacing: -0.01em; color: var(--text);
+}
+.search-bar input:focus { box-shadow: none; }
+.search-bar input::placeholder { color: var(--text-tertiary); }
+.search-bar svg { flex-shrink: 0; }
+.filters-panel { padding: var(--space-4) var(--space-5); background: transparent; box-shadow: none; }
+.filters-panel label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary);
+}
+.results-count { margin: 0 0 var(--space-4); }
+
+/* ── Overviews: chart cards ─────────────────────────────────────────────── */
+.heatmap .cell, .heat-legend .cell { border-radius: 3px; }
+.heatmap .cell.selected { outline-color: var(--text); }
+.recharts-cartesian-axis-tick-value { font-variant-numeric: tabular-nums; }
