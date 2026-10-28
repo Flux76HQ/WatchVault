@@ -155,19 +155,19 @@ export function Search() {
 
   return (
     <>
-      <div className="row" style={{ marginBottom: 16, gap: 12 }}>
-        <h1 className="large-title" style={{ margin: 0 }}>{t("search.title")}</h1>
+      <div className="section-head dash-head" style={{ marginBottom: 20 }}>
+        <h1 className="large-title">{t("search.title")}</h1>
         <div className="spacer" style={{ flex: 1 }} />
         <AddCinemaFilmButton />
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="row" style={{ gap: 10, marginBottom: 14 }}>
-          <IconSearch width={20} height={20} className="muted" />
-          <input type="search" aria-label={t("search.placeholder")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus
-            placeholder={t("search.placeholder")} style={{ border: "none", minHeight: 32, padding: 0, background: "transparent" }} />
-        </div>
-        <hr className="divider" style={{ margin: "0 0 14px" }} />
+      <div className="search-bar">
+        <IconSearch width={22} height={22} />
+        <input type="search" aria-label={t("search.placeholder")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus
+          placeholder={t("search.placeholder")} />
+      </div>
+
+      <div className="card filters-panel" style={{ marginBottom: 28 }}>
         <div className="filters-grid">
           <div>
             <label htmlFor="search-kind">{t("search.type")}</label>
@@ -231,7 +231,7 @@ export function Search() {
           <Empty title={t("search.noMatches")} hint={t("search.noMatchesHint")} />
         ) : (
           <>
-            <p className="muted" style={{ marginBottom: 14 }}>{total !== 1 ? t("search.titles", { count: total }) : t("search.titleOne", { count: total })}</p>
+            <p className="eyebrow results-count">{total !== 1 ? t("search.titles", { count: total }) : t("search.titleOne", { count: total })}</p>
             <div className="poster-grid">
               {results.map((rt) => {
                 const p0 = rt.platforms?.[0];

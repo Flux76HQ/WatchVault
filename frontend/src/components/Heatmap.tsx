@@ -73,7 +73,7 @@ export function Heatmap({ days, year, selected, onSelect }: {
                   background: c.date
                     ? c.count
                       ? `color-mix(in srgb, var(--accent) ${level(c.count) * 100}%, transparent)`
-                      : "var(--accent-subtle)"
+                      : "var(--surface-2)"
                     : "transparent",
                   cursor: clickable ? "pointer" : "default",
                 }}
@@ -84,7 +84,7 @@ export function Heatmap({ days, year, selected, onSelect }: {
       </div>
       <div className="heat-legend" style={{ marginTop: 8 }}>
         <span>Less</span>
-        <span className="cell" style={{ background: "var(--accent-subtle)" }} />
+        <span className="cell" style={{ background: "var(--surface-2)" }} />
         <span className="cell" style={{ background: "color-mix(in srgb, var(--accent) 40%, transparent)" }} />
         <span className="cell" style={{ background: "color-mix(in srgb, var(--accent) 70%, transparent)" }} />
         <span className="cell" style={{ background: "var(--accent)" }} />

@@ -26,13 +26,10 @@ function HoursTrend({ scope }: { scope: string }) {
   })), [data, gran]);
 
   return (
-    <Section title={t("overviews.watchTimeOverTime")}>
+    <Section title={t("overviews.watchTimeOverTime")}
+      right={<Seg value={gran} onChange={setGran} options={[
+        { value: "day", label: t("overviews.day") }, { value: "week", label: t("overviews.week") }, { value: "month", label: t("overviews.month") }]} />}>
       <div className="card">
-        <div className="row" style={{ marginBottom: 12 }}>
-          <div className="spacer" style={{ flex: 1 }} />
-          <Seg value={gran} onChange={setGran} options={[
-            { value: "day", label: t("overviews.day") }, { value: "week", label: t("overviews.week") }, { value: "month", label: t("overviews.month") }]} />
-        </div>
         {error ? <ErrorState error={error} retry={reload} /> :
           data == null ? <Loading /> :
           series.length ? <TrendArea data={series} /> : <p className="muted">{t("overviews.noDataRange")}</p>}
@@ -63,13 +60,10 @@ function PlatformBreakdown({ scope }: { scope: string }) {
   }, [data, period, t]);
 
   return (
-    <Section title={t("overviews.perPlatform")}>
+    <Section title={t("overviews.perPlatform")}
+      right={<Seg value={period} onChange={setPeriod} options={[
+        { value: "month", label: t("overviews.monthly") }, { value: "year", label: t("overviews.yearly") }]} />}>
       <div className="card">
-        <div className="row" style={{ marginBottom: 12 }}>
-          <div className="spacer" style={{ flex: 1 }} />
-          <Seg value={period} onChange={setPeriod} options={[
-            { value: "month", label: t("overviews.monthly") }, { value: "year", label: t("overviews.yearly") }]} />
-        </div>
         {error ? <ErrorState error={error} retry={reload} /> :
           data == null ? <Loading /> :
           rows.length ? (
@@ -78,7 +72,7 @@ function PlatformBreakdown({ scope }: { scope: string }) {
               <div className="chips" style={{ marginTop: 12 }}>
                 {series.map((s) => (
                   <span key={s.key} className="caption row" style={{ gap: 6 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" }} />
+                    <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" }} aria-hidden="true" />
                     {s.name}
                   </span>
                 ))}
@@ -177,12 +171,8 @@ function GenreActor({ scope }: { scope: string }) {
   return (
     <div className="grid-2">
       <div>
-        <Section title={t("overviews.timePerGenre")}>
+        <Section title={t("overviews.timePerGenre")} right={<RangeSeg value={genreRange} onChange={setGenreRange} />}>
           <div className="card">
-            <div className="row" style={{ marginBottom: 12 }}>
-              <div className="spacer" style={{ flex: 1 }} />
-              <RangeSeg value={genreRange} onChange={setGenreRange} />
-            </div>
             {genre.loading ? <Loading /> :
               genreData.length ? (
                 <div className="col" style={{ gap: 10 }}>
@@ -202,12 +192,8 @@ function GenreActor({ scope }: { scope: string }) {
         </Section>
       </div>
       <div>
-        <Section title={t("overviews.timePerActor")}>
+        <Section title={t("overviews.timePerActor")} right={<RangeSeg value={actorRange} onChange={setActorRange} />}>
           <div className="card">
-            <div className="row" style={{ marginBottom: 12 }}>
-              <div className="spacer" style={{ flex: 1 }} />
-              <RangeSeg value={actorRange} onChange={setActorRange} />
-            </div>
             {actor.loading ? <Loading /> :
               actor.data && actor.data.length ? (
                 <div className="col" style={{ gap: 10 }}>
@@ -269,8 +255,8 @@ export function Overviews() {
 
   return (
     <>
-      <div className="section-head" style={{ marginTop: 0 }}>
-        <h1 className="large-title" style={{ margin: 0 }}>{t("overviews.title")}</h1>
+      <div className="section-head dash-head">
+        <h1 className="large-title">{t("overviews.title")}</h1>
         <div className="spacer" style={{ flex: 1 }} />
         {editing && <button className="btn-ghost btn-sm" onClick={restoreDefault}
           title={t("dashboard.restoreDefault")} aria-label={t("dashboard.restoreDefault")}>
