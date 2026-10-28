@@ -97,6 +97,7 @@ export function initials(name: string): string {
 }
 
 export const ACCENTS: { name: string; value: string }[] = [
+  { name: "Amber", value: "#f0a21a" },
   { name: "Blue", value: "#0a84ff" },
   { name: "Indigo", value: "#5e5ce6" },
   { name: "Purple", value: "#bf5af2" },

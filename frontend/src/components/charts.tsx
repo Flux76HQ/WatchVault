@@ -12,7 +12,7 @@ function cssVar(name: string, fallback: string): string {
 
 const grid = () => cssVar("--hairline", "rgba(0,0,0,0.1)");
 const axis = () => cssVar("--text-tertiary", "#8e8e93");
-const accent = () => cssVar("--accent", "#0a84ff");
+const accent = () => cssVar("--accent", "#f0a21a");
 
 const tooltipStyle = {
   background: "var(--surface-strong)",
@@ -70,10 +70,16 @@ export function TrendArea({ data, height = 240 }: { data: SeriesPoint[]; height?
 export function Spark({ data, height = 56 }: { data: SeriesPoint[]; height?: number }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 4, right: 2, bottom: 0, left: 2 }}>
-        <Line type="monotone" dataKey="value" stroke={accent()} strokeWidth={2} dot={false} />
+      <AreaChart data={data} margin={{ top: 4, right: 2, bottom: 0, left: 2 }}>
+        <defs>
+          <linearGradient id="wv-spark" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={accent()} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={accent()} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey="value" stroke={accent()} strokeWidth={2} fill="url(#wv-spark)" dot={false} />
         <Tooltip contentStyle={tooltipStyle} />
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

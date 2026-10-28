@@ -151,8 +151,8 @@ gestures (no pinch-zoom, no long-press text callouts).</sub>
 - **Fast overviews at any scale** — a precomputed `watch_daily_agg` rollup keeps trends,
   heatmaps and per-platform charts fast across years of history.
 - **Modern, responsive UI** — poster grids, charts (line/stacked-bar/horizontal-bar),
-  a calendar heatmap, glass materials, Light/Dark/System themes and a personalizable
-  accent color. Works on desktop and mobile (installable PWA, offline-capable shell).
+  a calendar heatmap, a dark-first "cinema noir" look (artwork-led, glass only for floating
+  chrome), Light/Dark/System themes and a personalizable accent color. Works on desktop and mobile (installable PWA, offline-capable shell).
 - **Expert Mode** — an opt-in toggle (Settings → Appearance) that reveals advanced,
   technical features: live scrobbling, the import/attribution log and re-attribution
   tools, and long-press to delete a title from the database. Off by default keeps the
