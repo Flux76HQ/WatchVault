@@ -4,6 +4,7 @@ import { useT } from "../lib/i18n";
 import { loginPasskey, recoverWithCode, registerPasskey, passkeysSupported } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { addPasskey } from "../lib/auth";
+import { IconLogo } from "../components/icons";
 
 type Mode = "login" | "register" | "recover";
 
@@ -58,7 +59,7 @@ export function Login() {
   if (recoveryCodes) {
     return (
       <div className="center-screen">
-        <div className="card" style={{ maxWidth: 460, width: "100%" }}>
+        <div className="card login-card" style={{ maxWidth: 460, width: "100%" }}>
           <h1 className="title" style={{ marginBottom: 8 }}>{t("login.saveRecoveryCodes")}</h1>
           <p className="muted" style={{ marginBottom: 16 }}>
             {t("login.saveRecoveryHelp")}
@@ -77,9 +78,9 @@ export function Login() {
 
   return (
     <div className="center-screen">
-      <div className="card" style={{ maxWidth: 420, width: "100%" }}>
-        <div className="brand" style={{ fontSize: "1.5rem", marginBottom: 6 }}>
-          <img src="/favicon.svg" alt="" style={{ width: 36, height: 36 }} />
+      <div className="card login-card" style={{ maxWidth: 420, width: "100%" }}>
+        <div className="brand" style={{ fontSize: "1.7rem", marginBottom: 6 }}>
+          <IconLogo size={36} />
           <span>WatchVault</span>
         </div>
         <p className="muted" style={{ marginBottom: 20 }}>{t("common.tagline")}</p>

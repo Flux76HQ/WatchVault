@@ -23,7 +23,9 @@ export function GenreTitles() {
   return (
     <>
       <BackLink to="/overviews" />
-      <h1 className="large-title" style={{ margin: "8px 0 16px" }}>{heading}</h1>
+      <div className="section-head dash-head" style={{ marginBottom: 20 }}>
+        <h1 className="large-title">{heading}</h1>
+      </div>
       {titles.length ? (
         <div className="poster-grid">
           {titles.map((m: any) => (

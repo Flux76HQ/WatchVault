@@ -597,13 +597,11 @@ function Accordion({ title, children, defaultOpen }: { title: string; children: 
   return (
     <div className="accordion card" style={{ padding: 0, overflow: "hidden" }}>
       <button className="accordion-head row" onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        style={{ width: "100%", justifyContent: "space-between", alignItems: "center", gap: 10,
-          padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer" }}>
+        aria-expanded={open}>
         <strong>{title}</strong>
         <IconChevron width={16} height={16} style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform .15s" }} />
       </button>
-      {open && <div className="accordion-body" style={{ padding: "0 16px 16px" }}>{children}</div>}
+      {open && <div className="accordion-body">{children}</div>}
     </div>
   );
 }
@@ -638,8 +636,10 @@ export function Settings() {
 
   return (
     <>
-      <h1 className="large-title" style={{ marginBottom: 12 }}>{t("settings.title")}</h1>
-      <div className="seg settings-pills" style={{ marginBottom: 18 }}>
+      <div className="section-head dash-head" style={{ marginBottom: 12 }}>
+        <h1 className="large-title">{t("settings.title")}</h1>
+      </div>
+      <div className="seg settings-pills" style={{ marginBottom: 24 }}>
         {tabs.map((tb) => (
           <button key={tb.id} className={tab === tb.id ? "active" : ""} onClick={() => pick(tb.id)}>{tb.label}</button>
         ))}
