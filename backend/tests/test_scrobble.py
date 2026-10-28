@@ -830,6 +830,62 @@ def test_parse_generic_non_season_album_is_left_alone():
     assert evt.season is None and evt.episode_name is None
 
 
+def _infuse_payload(**over):
+    # Real Home Assistant attributes from Infuse on Apple TV: no artist/album/content id.
+    body = {
+        "event": "update", "source": "homeassistant",
+        "title": "NCIS: Origins - S3 \u2219 A4 - Shimmy Shimmy Ya", "kind": "series",
+        "platform": "", "app_id": "com.firecore.infuse",
+        "position_seconds": 0, "duration_seconds": 2596, "dedup_key": "",
+    }
+    body.update(over)
+    return body
+
+
+def test_parse_generic_infuse_title_splits_into_series_season_episode():
+    evt = parse_generic_payload(_infuse_payload())
+    assert evt.raw_title == "NCIS: Origins"
+    assert (evt.season, evt.episode) == (3, 4)
+    assert evt.episode_name == "Shimmy Shimmy Ya"
+    assert evt.kind == "series"
+    assert evt.platform_key == "infuse"
+    # Same series/episode on a later tick or another device dedups to one watch.
+    assert evt.dedup_key == "homeassistant:ncis origins:3:4"
+
+
+def test_parse_generic_infuse_english_episode_letter_and_long_runtime():
+    evt = parse_generic_payload(_infuse_payload(
+        title="NCIS: Origins - S3 \u2219 E12 - Some Name", kind="movie", duration_seconds=5400))
+    assert (evt.raw_title, evt.season, evt.episode) == ("NCIS: Origins", 3, 12)
+    assert evt.kind == "series"
+
+
+def test_parse_generic_infuse_title_without_episode_name():
+    evt = parse_generic_payload(_infuse_payload(title="Severance - S2 \u2219 E1"))
+    assert (evt.raw_title, evt.season, evt.episode) == ("Severance", 2, 1)
+    assert evt.episode_name is None
+
+
+def test_parse_generic_infuse_series_containing_dash():
+    evt = parse_generic_payload(_infuse_payload(title="Star Trek - Voyager - S1 \u2219 A2 - Parallax"))
+    assert evt.raw_title == "Star Trek - Voyager"
+    assert (evt.season, evt.episode, evt.episode_name) == (1, 2, "Parallax")
+
+
+def test_parse_generic_infuse_explicit_season_episode_wins():
+    evt = parse_generic_payload(_infuse_payload(season=1, episode=9))
+    assert evt.raw_title == "NCIS: Origins - S3 \u2219 A4 - Shimmy Shimmy Ya"
+    assert (evt.season, evt.episode) == (1, 9)
+
+
+def test_parse_generic_infuse_movie_title_is_left_alone():
+    for title in ("Heat", "Se7en", "Alien - Director's Cut", "Mission: Impossible - S Rank"):
+        evt = parse_generic_payload(_infuse_payload(title=title, kind="movie"))
+        assert evt.raw_title == title
+        assert evt.season is None and evt.episode is None
+        assert evt.kind == "movie"
+
+
 class EpisodeCursor(SmartCursor):
     """SmartCursor whose title_episodes table holds a season of NCIS: Origins."""
     EPISODES = [
