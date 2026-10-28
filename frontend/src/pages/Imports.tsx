@@ -603,7 +603,9 @@ export function Imports() {
 
   return (
     <>
-      <h1 className="large-title" style={{ marginBottom: 16 }}>{t("imports.title")}</h1>
+      <div className="section-head dash-head" style={{ marginBottom: 20 }}>
+        <h1 className="large-title">{t("imports.title")}</h1>
+      </div>
       <div className="col" style={{ gap: 20 }}>
         <FileImport providers={providers.data || []} onDone={() => connections.reload()} />
         <Connections providers={providers.data || []} connections={connections.data || []} reload={connections.reload} />

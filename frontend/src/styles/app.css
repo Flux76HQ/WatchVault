@@ -840,8 +840,6 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 /* ── Settings pills + accordion ─────────────────────────────────────────── */
 .settings-pills { display: inline-flex; flex-wrap: wrap; }
 .accordion { padding: 0; }
-.accordion-head { transition: background .12s; }
-.accordion-head:hover { background: var(--bg-elev); }
 
 /* ── Dashboard: the lobby ───────────────────────────────────────────────── */
 
@@ -925,3 +923,25 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
 .heatmap .cell, .heat-legend .cell { border-radius: 3px; }
 .heatmap .cell.selected { outline-color: var(--text); }
 .recharts-cartesian-axis-tick-value { font-variant-numeric: tabular-nums; }
+
+/* ── Settings, imports, sign-in ─────────────────────────────────────────── */
+.accordion-head {
+  width: 100%; justify-content: space-between; align-items: center; gap: var(--space-3);
+  padding: 16px var(--space-5); min-height: 56px; border-radius: 0;
+  background: transparent; color: var(--text); border: 0; font-size: 1rem; text-align: left;
+  transition: background var(--dur-fast) var(--ease);
+}
+.accordion-head:hover { background: var(--surface-2); }
+.accordion-head strong { font-family: var(--font-display); font-weight: 600; font-size: 1.12rem; letter-spacing: -0.01em; }
+.accordion-head svg { color: var(--text-tertiary); }
+.accordion-body { padding: var(--space-2) var(--space-5) var(--space-5); border-top: 1px solid var(--hairline); padding-top: var(--space-5); }
+.login-card { padding: var(--space-6); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); }
+.login-card .brand { color: var(--text); }
+.accordion-body > .card { background: transparent; border: 0; box-shadow: none; padding: 0; margin: 0; }
+.settings-pills + .section-head { margin-top: var(--space-5); }
+input[type="file"]::file-selector-button {
+  font: inherit; font-weight: 600; margin-right: var(--space-3); padding: 6px 14px; cursor: pointer;
+  border: 1px solid var(--hairline-strong); border-radius: var(--radius-sm);
+  background: var(--accent-subtle); color: var(--accent-readable);
+}
+input[type="file"]::file-selector-button:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
