@@ -284,6 +284,8 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
   .topbar { gap: var(--space-2); }
   .brand { font-size: 1.12rem; gap: 8px; margin-right: 0; min-width: 0; }
   .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Keep the profile button's accessible name; only its width is given up so the wordmark fits */
+  .profile-label { max-width: 0 !important; }
 }
 @media (max-width: 760px) {
   .nav-links { display: none; }
@@ -609,7 +611,47 @@ label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin
   font-size: 0.85rem;
 }
 
-.title-hero { padding: var(--space-5); margin-bottom: 0; }
+/* Title hero — full-bleed backdrop under a scrim that fades into the page */
+.app-shell { overflow-x: clip; }
+.title-hero {
+  position: relative; isolation: isolate;
+  width: 100vw; margin: calc(-1 * var(--space-6)) 0 var(--space-5) calc(50% - 50vw);
+  padding: calc(var(--space-7) + var(--space-6)) 0 var(--space-5);
+  min-height: 360px; display: flex; align-items: flex-end;
+}
+.title-hero-top {
+  position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 1180px; padding: 0 var(--space-4);
+}
+.title-hero-top .btn-back { margin-bottom: 0; background: color-mix(in srgb, var(--bg) 55%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.title-hero-art {
+  position: absolute; inset: 0; z-index: -1;
+  background-size: cover; background-position: center 22%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+}
+.title-hero-art::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 40%, transparent 85%),
+    linear-gradient(to right, color-mix(in srgb, var(--bg) 78%, transparent), transparent 65%);
+}
+.title-hero-art.is-poster { filter: blur(48px) saturate(1.4); transform: scale(1.4); opacity: 0.55; }
+.title-hero-body {
+  width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 var(--space-4);
+  display: flex; gap: var(--space-5); align-items: flex-end;
+}
+.title-hero-poster { width: 168px; flex-shrink: 0; box-shadow: var(--shadow-pop); }
+.title-hero-info { gap: var(--space-3); min-width: 0; }
+.title-hero-info .large-title { font-size: clamp(2.1rem, 1.4rem + 3vw, 3.6rem); }
+.title-hero-meta { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); color: var(--text-secondary); }
+.title-hero-meta span + span::before { content: "·"; margin-right: var(--space-3); color: var(--text-tertiary); }
+.title-overview { margin: var(--space-5) 0; max-width: 68ch; font-size: 1.05rem; line-height: 1.6; text-wrap: pretty; }
+@media (max-width: 640px) {
+  .title-hero { min-height: 0; padding-top: calc(var(--space-7) + var(--space-3)); margin-top: calc(-1 * var(--space-5)); }
+  .title-hero-body { gap: var(--space-3); align-items: flex-end; }
+  .title-hero-poster { width: 108px; }
+}
 .cast-row { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: 8px; }
 .cast-card {
   display: flex; flex-direction: column; align-items: center; gap: 6px;

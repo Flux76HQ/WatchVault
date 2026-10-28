@@ -25,7 +25,7 @@ function ProfileSwitcher() {
           <span className="avatar" style={{ width: 24, height: 24, fontSize: 11 }}>
             {current?.avatar ? <img src={current.avatar} alt="" /> : current ? initials(current.display_name) : "★"}
           </span>
-          <span style={{ maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+          <span className="profile-label" style={{ maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
           <IconChevron width={16} height={16} style={{ transform: "rotate(90deg)" }} />
         </>
       )}
