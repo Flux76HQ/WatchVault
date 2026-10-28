@@ -54,6 +54,7 @@ _APP_ID_PLATFORM = {
     "nl.nlziet.app": "nlziet",
     "nl.nlziet.nlziet": "nlziet",
     "com.plexapp.plex": "plex",
+    "com.firecore.infuse": "infuse",
     "com.apple.tv": "appletv",
     "com.apple.TVWatchList": "appletv",
 }
@@ -61,6 +62,14 @@ _APP_ID_PLATFORM = {
 # tvOS Now Playing metadata for an episode (Plex and other apps): the title is the
 # *episode* name, the artist the *series* and the album "Season N" / "Seizoen N".
 _SEASON_ALBUM = re.compile(r"^\s*(?:season|seizoen|s)\s*(\d+)\s*$", re.IGNORECASE)
+
+# Infuse packs everything into media_title, e.g. "NCIS: Origins - S3 ∙ A4 - Shimmy
+# Shimmy Ya" (the episode letter follows the UI language: E / A). It sends no
+# artist or album. The episode name is optional; the series may itself contain " - ".
+_SERIES_SE_TITLE = re.compile(
+    r"^(?P<series>.+?)\s+-\s+S(?P<season>\d+)\s*[∙·•.,]?\s*"
+    r"(?:Ep|Afl|E|A)\.?\s*(?P<episode>\d+)(?:\s+-\s+(?P<name>.+))?$",
+    re.IGNORECASE)
 
 
 def _platform_from_app_id(app_id: Optional[str]) -> Optional[str]:
@@ -235,6 +244,15 @@ def parse_generic_payload(body: dict) -> Optional[ScrobbleEvent]:
         season = int(album_season.group(1))
         episode_name = title
         title = artist
+        kind = "series"
+    # Infuse: season, episode number and episode name are all in the title. The
+    # same explicit-wins rule applies, and we get the episode number for free.
+    se_title = _SERIES_SE_TITLE.match(title)
+    if se_title and season is None and episode is None:
+        season = int(se_title.group("season"))
+        episode = int(se_title.group("episode"))
+        episode_name = (se_title.group("name") or "").strip() or episode_name
+        title = se_title.group("series").strip()
         kind = "series"
     position_s = _int(body.get("position_seconds"))
     duration_s = _int(body.get("duration_seconds"))

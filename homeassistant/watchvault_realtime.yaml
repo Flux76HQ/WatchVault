@@ -106,6 +106,7 @@ actions:
         {% set m = {'com.wbd.hbomax': 'hbomax', 'com.netflix.Netflix': 'netflix',
             'com.disney.disneyplus': 'disney', 'com.amazon.aiv.AIVApp': 'prime',
             'nl.rtl.videoland.v2': 'videoland', 'com.plexapp.plex': 'plex',
+            'com.firecore.infuse': 'infuse',
             'com.viaplay.skyshowtime.SkyShowtime': 'skyshowtime',
             'nl.nlziet.app': 'nlziet', 'nl.nlziet.nlziet': 'nlziet',
             'com.apple.tv': 'appletv', 'com.apple.TVWatchList': 'appletv'} %}
