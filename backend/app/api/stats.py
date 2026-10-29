@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request
 from ..db import query_all, query_one, connection
 from ..auth.sessions import current_user, require_perm
 from ..continue_watching import clamp_days, continue_items
+from ..whats_next import whats_next
 from ._common import EFF_SECONDS, poster_url, scope_user_ids
 
 bp = Blueprint("stats", __name__, url_prefix="/api/stats")
@@ -473,6 +474,17 @@ def continue_watching():
     user = current_user()
     days = clamp_days(request.args.get("days"))
     return jsonify(continue_items(str(user["household_id"]), _ids(), poster_url, days))
+
+
+@bp.get("/whats-next")
+@require_perm("catalog.read")
+def whats_next_block():
+    """The dashboard "What's next" block: for every tagged series the next episode
+    nobody in scope has watched, and its state. ``?tag=`` narrows the items to one
+    tag; the returned ``tags`` (with counts) always cover every tagged series."""
+    user = current_user()
+    tag = request.args.get("tag") or None
+    return jsonify(whats_next(str(user["household_id"]), _ids(), poster_url, tag))
 
 
 @bp.get("/unfinished")

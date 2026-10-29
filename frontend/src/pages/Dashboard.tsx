@@ -13,6 +13,7 @@ import { EpisodePicker } from "../components/EpisodePicker";
 import { resolveLayout, EditBlock } from "../components/LayoutEdit";
 import { WatchedGrid } from "../components/WatchedGrid";
 import { ContinueWatching } from "../components/ContinueWatching";
+import { WhatsNext } from "../components/WhatsNext";
 
 type RecentRange = "week" | "month" | "year";
 
@@ -20,8 +21,8 @@ type RecentRange = "week" | "month" | "year";
 // user (persisted in prefs.dashboard_layout, synced via /preferences). Blocks
 // marked `expert` only appear when Expert mode is on. Unknown/new ids in a saved
 // layout are ignored and new blocks are appended, so old layouts stay valid.
-type BlockId = "nowPlaying" | "continue" | "unfinished" | "unknown" | "stats" | "trend" | "platforms" | "monthly";
-const DEFAULT_ORDER: BlockId[] = ["nowPlaying", "continue", "unfinished", "unknown", "stats", "trend", "platforms", "monthly"];
+type BlockId = "nowPlaying" | "continue" | "whatsNext" | "unfinished" | "unknown" | "stats" | "trend" | "platforms" | "monthly";
+const DEFAULT_ORDER: BlockId[] = ["nowPlaying", "continue", "whatsNext", "unfinished", "unknown", "stats", "trend", "platforms", "monthly"];
 
 export function Dashboard() {
   const { scope, user, profiles, prefs, savePrefs } = useApp();
@@ -65,6 +66,7 @@ export function Dashboard() {
   const blocks: Record<BlockId, { labelKey: string; expert?: boolean; node: ReactNode }> = {
     nowPlaying: { labelKey: "dashboard.blockNowPlaying", expert: true, node: <NowPlaying scope={scope} /> },
     continue: { labelKey: "dashboard.blockContinue", node: <ContinueWatching scope={scope} /> },
+    whatsNext: { labelKey: "dashboard.blockWhatsNext", node: <WhatsNext scope={scope} /> },
     unfinished: { labelKey: "dashboard.blockUnfinished", expert: true, node: <UnfinishedTitles scope={scope} /> },
     unknown: { labelKey: "dashboard.blockUnknown", node: <UnknownTitles scope={scope} /> },
     stats: {
