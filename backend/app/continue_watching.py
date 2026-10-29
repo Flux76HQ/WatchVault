@@ -17,7 +17,7 @@ testable without a database; the ``fetch_*`` functions are thin queries.
 from __future__ import annotations
 
 from .db import query_all, query_one
-from .ingest.calendar import WINDOW_DAYS
+from .ingest.calendar import DEFAULT_DAYS, MAX_DAYS
 from .ingest.scrobble import DEFAULT_THRESHOLD
 
 MIN_PROGRESS = 2.0   # below this a "partial" is an accidental start, not a break
@@ -26,6 +26,15 @@ LIMIT = 24
 
 _SOURCE_NAMES = {"sonarr": "Sonarr", "radarr": "Radarr", "plex": "Plex",
                  "homeassistant": "Home Assistant", "appletv": "Apple TV"}
+
+
+def clamp_days(value) -> int:
+    """The requested "ready to watch" period as a whole number of days in 0..MAX_DAYS;
+    anything missing or unparseable falls back to the default."""
+    try:
+        return max(0, min(MAX_DAYS, int(value)))
+    except (TypeError, ValueError):
+        return DEFAULT_DAYS
 
 
 def _threshold() -> float:
@@ -65,8 +74,9 @@ def fetch_partials(household_id: str, user_ids: list[str]) -> list[dict]:
         (household_id, [str(i) for i in user_ids], MIN_PROGRESS, _threshold(), PARTIAL_DAYS))
 
 
-def fetch_ready(household_id: str) -> list[dict]:
-    """Recently downloaded calendar items, joined to the catalog title they match."""
+def fetch_ready(household_id: str, days: int = DEFAULT_DAYS) -> list[dict]:
+    """Calendar items that arrived since the start (UTC) of the day ``days`` days ago
+    -- so 0 means "today only" -- joined to the catalog title they match."""
     return query_all(
         "SELECT DISTINCT ON (c.id) c.id, c.source, c.kind, c.external_key, c.title, c.year, "
         "  c.season, c.episode, c.episode_name, c.tmdb_id, c.poster_url, c.runtime_minutes, "
@@ -74,9 +84,11 @@ def fetch_ready(household_id: str) -> list[dict]:
         "FROM calendar_items c "
         "LEFT JOIN titles t ON t.tmdb_id = c.tmdb_id AND c.tmdb_id IS NOT NULL "
         "  AND t.kind = CASE c.kind WHEN 'movie' THEN 'movie' ELSE 'series' END "
-        "WHERE c.household_id = %s AND c.available_at > now() - make_interval(days => %s) "
+        "WHERE c.household_id = %s "
+        "  AND c.available_at >= (date_trunc('day', now() AT TIME ZONE 'UTC') "
+        "                         - make_interval(days => %s)) AT TIME ZONE 'UTC' "
         "ORDER BY c.id, t.id",
-        (household_id, WINDOW_DAYS))
+        (household_id, clamp_days(days)))
 
 
 def fetch_watched(user_ids: list[str], title_ids: list[str]) -> dict[str, set]:
@@ -172,8 +184,9 @@ def build_continue(partials: list[dict], ready: list[dict], watched: dict[str, s
     return (items + cards)[:limit]
 
 
-def continue_items(household_id: str, user_ids: list[str], poster=lambda p: p) -> list[dict]:
+def continue_items(household_id: str, user_ids: list[str], poster=lambda p: p,
+                   days: int = DEFAULT_DAYS) -> list[dict]:
     partials = fetch_partials(household_id, user_ids)
-    ready = fetch_ready(household_id)
+    ready = fetch_ready(household_id, days)
     title_ids = sorted({str(r["title_id"]) for r in ready if r.get("title_id")})
     return build_continue(partials, ready, fetch_watched(user_ids, title_ids), poster)

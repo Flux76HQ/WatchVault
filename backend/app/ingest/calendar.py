@@ -11,9 +11,11 @@ import datetime as dt
 from ..db import connection
 from .adapters import get_adapter
 
-# How far back an item still counts as "recently downloaded". The same number
-# bounds the read side (continue_watching), so a stale row never outlives it.
-WINDOW_DAYS = 14
+# The calendar is always read for the longest period a person can choose to see
+# ("Continue watching" setting, 0-30 days); the dashboard narrows it at read time,
+# so changing the setting needs no new sync.
+MAX_DAYS = 30
+DEFAULT_DAYS = 14
 
 _COLUMNS = ("source", "kind", "external_key", "title", "year", "season", "episode",
             "episode_name", "tmdb_id", "tvdb_id", "imdb_id", "poster_url",
@@ -21,10 +23,10 @@ _COLUMNS = ("source", "kind", "external_key", "title", "year", "season", "episod
 
 
 def window(today: dt.date | None = None) -> tuple[dt.date, dt.date]:
-    """The calendar window to read: the last ``WINDOW_DAYS`` days up to tomorrow
+    """The calendar window to read: the last ``MAX_DAYS`` days up to tomorrow
     (tomorrow, so an episode whose air date is already "tomorrow" in UTC is kept)."""
     today = today or dt.datetime.now(dt.timezone.utc).date()
-    return today - dt.timedelta(days=WINDOW_DAYS), today + dt.timedelta(days=1)
+    return today - dt.timedelta(days=MAX_DAYS), today + dt.timedelta(days=1)
 
 
 def store_calendar(cur, household_id, connection_id, items: list[dict]) -> int:

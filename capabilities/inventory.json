@@ -2395,6 +2395,48 @@
     ]
   },
   {
+    "id": "preference.continue-days",
+    "kind": "preference",
+    "source": {
+      "path": "frontend/src/lib/app.tsx",
+      "anchor": "continueDays?: number;"
+    },
+    "behavior": "Users can choose, from today only (0) up to 30 days, how far back Sonarr/Radarr downloads still appear in the Continue watching block.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-02",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/pages/Settings.test.tsx",
+      "frontend/src/components/ContinueWatching.test.tsx"
+    ]
+  },
+  {
     "id": "preference.dashboard-layout",
     "kind": "preference",
     "source": {

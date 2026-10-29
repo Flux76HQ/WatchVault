@@ -510,16 +510,20 @@ kinds of card, and hides itself while there is nothing to show:
   below 2 %, at or above the completion threshold, or older than 60 days are left out, and
   so is anything that was watched to the end afterwards.
 - **Ready to watch** — an episode or film that **Sonarr / Radarr** have already downloaded
-  (it has a file) in the last 14 days and nobody in the selected profile has watched.
+  (it has a file) in the chosen period and nobody in the selected profile has watched.
+  **Settings → Appearance → Continue watching** sets that period per person, from *today
+  only* (0) to 30 days; the default is 14. A day is a calendar day in UTC, so 0 means
+  everything that arrived since 00:00 UTC. Half-watched items are not affected by it.
   Several waiting episodes of one series become one card for the earliest, with "+n more".
   Titles WatchVault doesn't know yet (a new film nobody has watched) show Sonarr/Radarr's own
   poster and have no title page to open; known titles link to theirs. In the household view
   an item counts as watched once *any* member has watched it.
 
 Sonarr and Radarr connections are refreshed by the worker every 15 minutes, or at once with
-**Sync**; the dashboard reads the stored calendar and never calls them itself. Only items
+**Sync**, always for the last 30 days, so changing the period needs no new sync; the dashboard
+reads the stored calendar and never calls them itself. Only items
 with a file are kept, so upcoming episodes and films that are still being fetched don't
-appear. API: `GET /api/stats/continue?profile=<id|all>`.
+appear. API: `GET /api/stats/continue?profile=<id|all>&days=<0-30>`.
 
 ### Starting over
 

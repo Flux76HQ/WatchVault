@@ -22,12 +22,26 @@ export interface ContinueItem {
   profile: string | null;
 }
 
+export const CONTINUE_DAYS_MAX = 30;
+export const CONTINUE_DAYS_DEFAULT = 14;
+
+/** The "ready to watch" period in whole days, 0 (today only) to 30; anything else -> the default. */
+export function clampContinueDays(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value);
+  if (value == null || value === "" || !Number.isFinite(n)) return CONTINUE_DAYS_DEFAULT;
+  return Math.max(0, Math.min(CONTINUE_DAYS_MAX, Math.floor(n)));
+}
+
 // "Continue watching": what was left half-watched, and what Sonarr/Radarr have
 // downloaded that nobody has watched yet. Invisible while there is nothing to
 // show, so a household without those sources never sees an empty block.
 export function ContinueWatching({ scope }: { scope: string }) {
   const { t } = useT();
-  const { data } = useFetch<ContinueItem[]>(() => api.get("/stats/continue", { profile: scope }), [scope]);
+  const { prefs } = useApp();
+  // How far back downloads from Sonarr/Radarr still count (Settings → Appearance).
+  const days = clampContinueDays(prefs.continueDays);
+  const { data } = useFetch<ContinueItem[]>(
+    () => api.get("/stats/continue", { profile: scope, days }), [scope, days]);
   if (!data || data.length === 0) return null;
 
   const subtitle = (i: ContinueItem): string => {

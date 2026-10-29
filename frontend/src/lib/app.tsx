@@ -38,6 +38,7 @@ export interface Prefs {
   language: string;
   expert?: boolean;
   cinemaAdd?: boolean;
+  continueDays?: number;
   dashboard_layout?: DashboardLayout;
   // Saved position (index within the poster grid) of the collapsible "Unknown"
   // card that groups titles without a TMDB match, per grid context. Undefined
@@ -77,7 +78,7 @@ interface AppCtx {
 }
 
 const DEFAULT_ACCENT = "#f0a21a";
-const DEFAULT_PREFS: Prefs = { theme: "system", accent: DEFAULT_ACCENT, default_profile: "", language: "en", expert: false, cinemaAdd: true, dashboard_layout: { order: [], hidden: [] } };
+const DEFAULT_PREFS: Prefs = { theme: "system", accent: DEFAULT_ACCENT, default_profile: "", language: "en", expert: false, cinemaAdd: true, continueDays: 14, dashboard_layout: { order: [], hidden: [] } };
 
 const Ctx = createContext<AppCtx>(null as any);
 export const useApp = () => useContext(Ctx);

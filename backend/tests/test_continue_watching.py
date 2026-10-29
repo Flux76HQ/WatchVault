@@ -12,9 +12,9 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.continue_watching import build_continue  # noqa: E402
+from app.continue_watching import build_continue, clamp_days  # noqa: E402
 from app.ingest.adapters import get_adapter, arr  # noqa: E402
-from app.ingest.calendar import WINDOW_DAYS, store_calendar, window  # noqa: E402
+from app.ingest.calendar import DEFAULT_DAYS, MAX_DAYS, store_calendar, window  # noqa: E402
 
 UTC = dt.timezone.utc
 
@@ -142,10 +142,18 @@ def test_calendar_adapters_are_marked_and_history_adapters_are_not():
 
 # ── the calendar window and its store ───────────────────────────────────────
 
-def test_window_covers_the_last_two_weeks_up_to_tomorrow():
+def test_window_covers_the_longest_selectable_period_up_to_tomorrow():
     start, end = window(dt.date(2026, 10, 28))
-    assert start == dt.date(2026, 10, 28) - dt.timedelta(days=WINDOW_DAYS)
+    assert MAX_DAYS == 30
+    assert start == dt.date(2026, 9, 28)
     assert end == dt.date(2026, 10, 29)
+
+
+def test_clamp_days_keeps_the_setting_in_range_and_defaults_garbage():
+    assert [clamp_days(v) for v in (0, 1, 14, 30, 31, 999, -5, "7", 7.9)] == [0, 1, 14, 30, 30, 30, 0, 7, 7]
+    assert clamp_days(None) == DEFAULT_DAYS == 14
+    assert clamp_days("abc") == DEFAULT_DAYS
+    assert clamp_days("") == DEFAULT_DAYS
 
 
 class RecordingCursor:
