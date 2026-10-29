@@ -1,0 +1,88 @@
+# Cuts the GitHub Release for a version. This is the only thing that creates a version tag:
+# `gh release create` makes the tag and the Release in one call, and it refuses to run without
+# a reviewed notes file (docs/releases/vX.Y.Z.md). Rules: App-Guidance project-baseline.md §5.
+#
+# X.Y.Z comes from VERSION. Run it from `main`, on a commit whose delivery run is green.
+# The version image (1.2.3, 1.2) is built by docker.yml, dispatched on the new tag at the end.
+# The moving image tags (`main`, `latest`) are channels, not releases, and are not created here.
+
+name: Release
+
+"on":
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+env:
+  VERSION_FILE: VERSION
+  PROD_BRANCH: main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard the branch
+        run: |
+          if [[ "${GITHUB_REF}" != "refs/heads/${PROD_BRANCH}" ]]; then
+            echo "::error::A release must be run from '${PROD_BRANCH}' (got '${GITHUB_REF_NAME}')."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve the tag
+        id: tag
+        run: |
+          VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::${VERSION_FILE} '${VERSION}' is not a MAJOR.MINOR.PATCH semver."
+            exit 1
+          fi
+          git fetch --tags --quiet
+          TAG="v${VERSION}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "::error::Tag ${TAG} already exists. A version tag is never written twice; bump ${VERSION_FILE}."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "notes_file=docs/releases/${TAG}.md" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${TAG} from $(git rev-parse HEAD)"
+
+      - name: Guard the release notes exist
+        env:
+          NOTES_FILE: ${{ steps.tag.outputs.notes_file }}
+        run: |
+          if [[ ! -f "${NOTES_FILE}" ]]; then
+            echo "::error file=${NOTES_FILE}::Release notes ${NOTES_FILE} are missing. Write and review them (see docs/releases/README.md) and commit them before releasing."
+            exit 1
+          fi
+
+      - name: Create the tag and the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          NOTES_FILE: ${{ steps.tag.outputs.notes_file }}
+        run: |
+          gh release create "${TAG}" \
+            --target "$(git rev-parse HEAD)" \
+            --title "WatchVault ${TAG}" \
+            --notes-file "${NOTES_FILE}" \
+            --latest
+
+      # A tag created with GITHUB_TOKEN starts no `on: push: tags` workflow, but a
+      # workflow_dispatch made with it does: build the version image from the tag.
+      - name: Publish the version image from the new tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: gh workflow run docker.yml --ref "${TAG}"
