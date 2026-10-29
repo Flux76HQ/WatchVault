@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoA11yViolations } from "../test/a11y";
 import { renderWithApp } from "../test/render";
-import { ContinueWatching, type ContinueItem } from "./ContinueWatching";
+import { ContinueWatching, clampContinueDays, type ContinueItem } from "./ContinueWatching";
 
 const apiMock = vi.hoisted(() => ({
   get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), del: vi.fn(), upload: vi.fn(),
@@ -31,10 +31,10 @@ const item = (over: Partial<ContinueItem>): ContinueItem => ({
   more: 0, provider: { key: "radarr", name: "Radarr", color: null }, profile: null, ...over,
 });
 
-function serve(items: ContinueItem[]) {
+function serve(items: ContinueItem[], prefs: Record<string, unknown> = {}) {
   apiMock.get.mockImplementation((path: string) => {
     if (path === "/auth/status") return Promise.resolve({ bootstrapped: true, user });
-    if (path === "/preferences") return Promise.resolve({ theme: "system", accent: "#f0a21a", language: "en", expert: false, default_profile: "user-1" });
+    if (path === "/preferences") return Promise.resolve({ theme: "system", accent: "#f0a21a", language: "en", expert: false, default_profile: "user-1", ...prefs });
     if (path === "/profiles") return Promise.resolve([]);
     if (path === "/stats/continue") return Promise.resolve(items);
     return Promise.reject(new Error(`Unexpected GET ${path}`));
@@ -47,9 +47,20 @@ describe("ContinueWatching", () => {
   it("renders nothing while there is nothing to continue", async () => {
     serve([]);
     const { container } = renderWithApp(<ContinueWatching scope="user-1" />);
-    await vi.waitFor(() => expect(apiMock.get).toHaveBeenCalledWith("/stats/continue", { profile: "user-1" }));
+    await vi.waitFor(() => expect(apiMock.get).toHaveBeenCalledWith("/stats/continue", { profile: "user-1", days: 14 }));
     expect(container.querySelector(".poster-rail")).toBeNull();
     expect(screen.queryByText("Continue watching")).toBeNull();
+  });
+
+  it("asks for the period from the person's setting, kept within 0-30 days", async () => {
+    serve([], { continueDays: 0 });
+    renderWithApp(<ContinueWatching scope="all" />);
+    await vi.waitFor(() => expect(apiMock.get).toHaveBeenCalledWith("/stats/continue", { profile: "all", days: 0 }));
+
+    expect(clampContinueDays(0)).toBe(0);
+    expect(clampContinueDays(30)).toBe(30);
+    expect([clampContinueDays(31), clampContinueDays(-3), clampContinueDays(12.9)]).toEqual([30, 0, 12]);
+    expect([clampContinueDays(undefined), clampContinueDays("x"), clampContinueDays(null)]).toEqual([14, 14, 14]);
   });
 
   it("shows partial playback with what is left, and links titles that are in the catalog", async () => {

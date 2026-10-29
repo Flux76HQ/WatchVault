@@ -1,15 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/app";
 import { useT, providerLabel } from "../lib/i18n";
 import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Section } from "../components/ui";
+import { CONTINUE_DAYS_MAX, clampContinueDays } from "../components/ContinueWatching";
 import { IconFilm, IconTv, IconClose, IconChevron } from "../components/icons";
 import { TagPill } from "../components/TagChips";
 import { AccountSecurity } from "../components/AccountSecurity";
 import { HouseholdMembers, HowMembersJoin } from "./Profiles";
 import { ACCENTS, fmtDate } from "../lib/format";
+
+// How far back Sonarr/Radarr downloads still show in "Continue watching". The slider
+// is local while dragging and saved once, when the person lets go (pointer, key or blur).
+function ContinueDays() {
+  const { prefs, savePrefs } = useApp();
+  const { t } = useT();
+  const saved = clampContinueDays(prefs.continueDays);
+  const [value, setValue] = useState(saved);
+  useEffect(() => setValue(saved), [saved]);
+  const commit = () => { if (value !== saved) savePrefs({ continueDays: value }).catch(() => {}); };
+  const label = value === 0 ? t("settings.continueDaysToday")
+    : value === 1 ? t("settings.continueDaysOne") : t("settings.continueDaysN", { n: value });
+  return (
+    <div>
+      <label htmlFor="continue-days">{t("settings.continueDays")}</label>
+      <div className="row" style={{ gap: 12, alignItems: "center" }}>
+        <input id="continue-days" type="range" min={0} max={CONTINUE_DAYS_MAX} step={1} value={value}
+          aria-valuetext={label} onChange={(e) => setValue(Number(e.target.value))}
+          onPointerUp={commit} onKeyUp={commit} onBlur={commit} />
+        <output htmlFor="continue-days" style={{ minWidth: 130, fontWeight: 600 }}>{label}</output>
+      </div>
+      <span className="caption">{t("settings.continueDaysHint")}</span>
+    </div>
+  );
+}
 
 function Appearance() {
   const { prefs, savePrefs, profiles, user, can } = useApp();
@@ -55,6 +81,7 @@ function Appearance() {
             <span className="caption" style={{ flex: 1 }}>{t("settings.defaultProfileHint")}</span>
           </div>
         </div>
+        <ContinueDays />
         {can("ingest.write") && (
           <div>
             <label>{t("cinema.add")}</label>

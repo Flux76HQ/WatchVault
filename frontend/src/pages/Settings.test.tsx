@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoA11yViolations } from "../test/a11y";
@@ -96,6 +96,30 @@ describe("Settings preferences", () => {
     offButtons[0].focus();
     await actor.keyboard("{Enter}");
     expect(apiMock.put).toHaveBeenCalledWith("/preferences", { cinemaAdd: false });
+  });
+
+  it("saves the Continue watching period once, when the slider is released", async () => {
+    renderWithApp(<Settings />);
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+
+    const slider = screen.getByRole("slider", { name: /Continue watching/ });
+    expect(slider).toHaveValue("14");
+    expect(slider).toHaveAttribute("aria-valuetext", "14 days");
+
+    // Dragging only moves the local value...
+    fireEvent.change(slider, { target: { value: "0" } });
+    expect(slider).toHaveAttribute("aria-valuetext", "today only");
+    fireEvent.change(slider, { target: { value: "1" } });
+    expect(slider).toHaveAttribute("aria-valuetext", "1 day");
+    fireEvent.change(slider, { target: { value: "21" } });
+    expect(apiMock.put).not.toHaveBeenCalled();
+
+    // ...and releasing it saves once.
+    fireEvent.keyUp(slider);
+    await waitFor(() => expect(apiMock.put).toHaveBeenCalledWith("/preferences", { continueDays: 21 }));
+    expect(apiMock.put).toHaveBeenCalledTimes(1);
+    fireEvent.blur(slider);                       // nothing changed since: no second save
+    expect(apiMock.put).toHaveBeenCalledTimes(1);
   });
 
   it("has no detectable accessibility violations in the settings sample", async () => {

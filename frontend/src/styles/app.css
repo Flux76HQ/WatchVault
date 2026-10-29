@@ -957,3 +957,11 @@ input[type="file"]::file-selector-button:hover { background: color-mix(in srgb, 
 @media (max-width: 520px) { .poster-rail { grid-auto-columns: 124px; gap: var(--space-3); } }
 .poster-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 1; background: rgba(255, 255, 255, 0.28); }
 .poster-progress i { display: block; height: 100%; background: var(--accent); border-radius: 0 2px 2px 0; }
+
+/* Range slider: the accent-coloured track, still a full 44 px target */
+input[type="range"] {
+  width: 100%; max-width: 320px; min-height: 44px; padding: 0; border: 0; background: transparent;
+  accent-color: var(--accent); box-shadow: none; cursor: pointer;
+}
+input[type="range"]:focus { box-shadow: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
