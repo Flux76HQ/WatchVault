@@ -132,6 +132,8 @@ gestures (no pinch-zoom, no long-press text callouts).</sub>
 - **Continue watching** — a dashboard block with what was left half-watched (from live
   scrobbles, e.g. a Plex webhook) and what Sonarr/Radarr downloaded recently that nobody has
   watched yet. See [Continue watching](#continue-watching).
+- **What's next** — a dashboard block with the next unwatched episode of every series you
+  tagged (tag them from a Sonarr connection's *Running series*). See [What's next](#whats-next).
 - **Live scrobbling / Now Playing** — push real-time playback into WatchVault so streaming
   apps that have no history export still get tracked. A native **Plex webhook** and a
   generic JSON endpoint (for **Home Assistant**, **AppleTV** shortcuts, etc.) feed a
@@ -535,6 +537,32 @@ Sonarr and Radarr connections are refreshed by the worker every 15 minutes, or a
 reads the stored calendar and never calls them itself. Only items
 with a file are kept, so upcoming episodes and films that are still being fetched don't
 appear. API: `GET /api/stats/continue?profile=<id|all>&days=<0-30>`.
+
+### What's next
+
+The dashboard's **What's next** block (all members) follows every **series that carries at
+least one tag** of the household. Tag a running series from *Imports → API sync connections →
+Sonarr → Running series* (this adds it to the catalog), or tag any series on its title page.
+For each one the block shows the earliest episode nobody in the selected profile has watched
+(season 0 / specials are ignored; in the household view an episode counts as watched once any
+member has watched it), with a badge for where it stands:
+
+- **Ready** — Sonarr already downloaded it (only the last 30 days of Sonarr's calendar are known).
+- **Aired** — it has aired but is not known to be downloaded; "+n more" counts further aired
+  episodes waiting behind it.
+- **A date / TBA** — it airs later; Sonarr's next airing refines the date. An undated episode shows *TBA*.
+- **Caught up** — everything the catalog knows is watched; shown only while Sonarr knows a
+  future airing (with its date), otherwise the series is left out until a new episode appears.
+- **Waiting for episode info** — the catalog has no episodes for it yet (TMDB enrichment needs
+  the TMDB plugin key and has not run); Sonarr's next airing and poster stand in.
+
+Order: ready (newest download first), aired (most recently aired first), upcoming and
+caught-up by date, then series without episode info. The tag chips above the rail filter the
+block (any tag counts; the chips and their counts always cover every tagged series, and a
+chip disappears when its series have nothing left to show); the block hides itself while
+nothing is tagged. Sonarr data from a disabled connection is ignored. Episode data comes from
+TMDB, which keeps the first air date it stored for an episode, so a rescheduled episode can
+keep its old date. API: `GET /api/stats/whats-next?profile=<id|all>&tag=<tag id>`.
 
 ### Starting over
 
