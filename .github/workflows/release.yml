@@ -3,6 +3,7 @@
 # a reviewed notes file (docs/releases/vX.Y.Z.md). Rules: App-Guidance project-baseline.md §5.
 #
 # X.Y.Z comes from VERSION. Run it from `main`, on a commit whose delivery run is green.
+# The version image (1.2.3, 1.2) is built by docker.yml, dispatched on the new tag at the end.
 # The moving image tags (`main`, `latest`) are channels, not releases, and are not created here.
 
 name: Release
@@ -16,6 +17,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 env:
   VERSION_FILE: VERSION
@@ -76,3 +78,11 @@ jobs:
             --title "WatchVault ${TAG}" \
             --notes-file "${NOTES_FILE}" \
             --latest
+
+      # A tag created with GITHUB_TOKEN starts no `on: push: tags` workflow, but a
+      # workflow_dispatch made with it does: build the version image from the tag.
+      - name: Publish the version image from the new tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: gh workflow run docker.yml --ref "${TAG}"

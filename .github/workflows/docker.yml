@@ -2,6 +2,9 @@ name: Publish Docker image
 
 "on":
   workflow_call:
+  # Dispatched by the Release workflow on the new version tag (a tag created with GITHUB_TOKEN
+  # starts no `on: push: tags` run, but a workflow_dispatch does). Adds the 1.2.3 and 1.2 tags.
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -27,6 +30,14 @@ jobs:
       - name: Read canonical version
         id: version
         run: echo "value=$(node scripts/docker-version.mjs print)" >> "$GITHUB_OUTPUT"
+
+      - name: Guard the tag matches VERSION
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [[ "${GITHUB_REF_NAME}" != "v${{ steps.version.outputs.value }}" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION ${{ steps.version.outputs.value }}."
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
