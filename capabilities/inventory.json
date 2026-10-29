@@ -1209,6 +1209,47 @@
     ]
   },
   {
+    "id": "route.whats-next",
+    "kind": "route",
+    "source": {
+      "path": "frontend/src/App.tsx",
+      "anchor": "path=\"/whats-next\""
+    },
+    "behavior": "Authenticated users can open the current /whats-next route.",
+    "dimensions": {
+      "permissions": [
+        "authenticated"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "owner": {
+      "requirement": "DASH-01",
+      "phase": 5
+    },
+    "evidence": [
+      "frontend/src/pages/WhatsNext.test.tsx"
+    ]
+  },
+  {
     "id": "route.search",
     "kind": "route",
     "source": {

@@ -32,7 +32,8 @@ const BINGE = { id: "tg-b", name: "Binge", color: null };
 const item = (over: Partial<WhatsNextItem>): WhatsNextItem => ({
   key: "w:t1", title_id: "t1", title: "Andor", year: 2022, kind: "series", poster: null,
   tags: [FOLLOW], state: "aired", season: 1, episode: 2, episode_id: "ep-12", episode_name: "Aldhani",
-  air_date: "2026-10-01", air_at: null, available_at: null, behind: 0, runtime_minutes: 45, ...over,
+  air_date: "2026-10-01", air_at: null, available_at: null, behind: 0, runtime_minutes: 45,
+  remaining: 3, total: 10, ...over,
 });
 
 const tags = (n = 2) => [{ ...FOLLOW, count: n }, { ...BINGE, count: 1 }];
@@ -74,6 +75,7 @@ describe("WhatsNext", () => {
     const { container } = renderWithApp(<WhatsNext scope="user-1" />);
 
     expect(await screen.findByRole("heading", { name: "What's next" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See all" })).toHaveAttribute("href", "/whats-next");
     expect(screen.getByRole("link", { name: /Andor/ })).toHaveAttribute("href", "/title/t1");
     expect(screen.getByText("S1·E2 · +2 more")).toBeInTheDocument();           // ready, two more waiting
     expect(screen.getByText("Ready")).toBeInTheDocument();

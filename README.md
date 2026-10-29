@@ -564,6 +564,12 @@ nothing is tagged. Sonarr data from a disabled connection is ignored. Episode da
 TMDB, which keeps the first air date it stored for an episode, so a rescheduled episode can
 keep its old date. API: `GET /api/stats/whats-next?profile=<id|all>&tag=<tag id>`.
 
+The block's **See all** link opens the **What's next** page (`/whats-next`), the full list of every
+tagged series: no cap of 48 and, besides the states above, also the series that are fully watched
+with nothing coming (*Caught up*, no date). Cards show how many episodes are left and carry the
+same buttons; the tag chips filter it. It is reached from the block (there is no menu entry) and
+tells you how to tag a series while nothing is tagged yet. API: the same endpoint with `all=1`.
+
 Anyone who may write (`ingest.write`) also gets two buttons under each card. The **tick** marks
 the shown episode watched today (`POST /api/episodes/<id>/watch`, for the selected profile, or for
 whoever is signed in in the household view) and the block moves on to the next episode; there is

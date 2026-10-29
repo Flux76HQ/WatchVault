@@ -5,6 +5,7 @@ import { InstallPrompt } from "./components/InstallPrompt";
 import { Loading } from "./components/ui";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
+import { WhatsNextPage } from "./pages/WhatsNext";
 import { Overviews } from "./pages/Overviews";
 import { Search } from "./pages/Search";
 import { Imports } from "./pages/Imports";
@@ -40,6 +41,7 @@ export function App() {
             <Route path="/title/:id" element={<TitleDetail />} />
             <Route path="/person/:id" element={<Person />} />
             <Route path="/genre/:id" element={<GenreTitles />} />
+            <Route path="/whats-next" element={<WhatsNextPage />} />
             <Route path="/imports" element={<Imports />} />
             <Route path="/profiles" element={<Profiles />} />
             <Route path="/settings" element={<Settings />} />
