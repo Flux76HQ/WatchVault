@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 
 from .genres import canonical_genre
-from .util import normalize_text
+from .util import normalize_text, title_key
 
 # Languages we capture/translate content into (kept in sync with the frontend).
 LANGS = ["en", "nl", "fr", "es", "it", "de"]
@@ -191,6 +191,65 @@ def dedupe_title_by_tmdb(cur, kind: str, tmdb_id, current_title_id: str) -> str:
         if dup != canonical:
             cur.execute("SELECT wv_merge_titles(%s::uuid, %s::uuid)", (canonical, dup))
     return canonical
+
+
+def enqueue_enrich(cur, title_id) -> None:
+    """Queue TMDB enrichment for a title that has not been enriched yet, unless a
+    job for it is already pending. Idempotent, so callers can fire it freely."""
+    cur.execute(
+        "INSERT INTO background_jobs (kind, payload) "
+        "SELECT 'enrich_title', %s::jsonb "
+        "WHERE EXISTS (SELECT 1 FROM titles WHERE id = %s AND enriched_at IS NULL) "
+        "  AND NOT EXISTS (SELECT 1 FROM background_jobs WHERE kind = 'enrich_title' "
+        "    AND payload->>'title_id' = %s AND status = 'pending')",
+        (json.dumps({"title_id": str(title_id)}), str(title_id), str(title_id)),
+    )
+
+
+def get_or_create_series_by_tmdb(cur, tmdb_id: int, title: str,
+                                 year: int | None = None) -> tuple[str, bool]:
+    """Resolve a series by its TMDB id, creating a minimal row when absent.
+    Returns ``(title_id, created)``.
+
+    Used when a Sonarr series is tagged: the series may already exist (watched via
+    Plex, possibly with no ``tmdb_id`` yet) or not exist at all. Order:
+
+    1. a series with this ``tmdb_id``;
+    2. a series with the same normalized key and *no* ``tmdb_id`` -- the Plex-created
+       row for the same show -- which gets this ``tmdb_id`` instead of a duplicate;
+    3. a new row. When the key is already taken by a series with a *different*
+       ``tmdb_id`` (a remake with the same name), the key is disambiguated with the
+       year or the tmdb id, so two different shows are never merged.
+    """
+    cur.execute("SELECT id FROM titles WHERE kind = 'series' AND tmdb_id = %s", (tmdb_id,))
+    row = cur.fetchone()
+    if row:
+        return str(row["id"]), False
+
+    name = (title or "").strip() or f"TMDB {tmdb_id}"
+    key = title_key(name, "series") or f"tmdb:{tmdb_id}"
+    cur.execute("SELECT id, tmdb_id FROM titles WHERE kind = 'series' AND normalized_key = %s", (key,))
+    same_key = cur.fetchone()
+    if same_key and same_key["tmdb_id"] is None:
+        cur.execute("UPDATE titles SET tmdb_id = %s, updated_at = now() "
+                    "WHERE id = %s AND tmdb_id IS NULL", (tmdb_id, same_key["id"]))
+        return str(same_key["id"]), False
+
+    keys = [key] if not same_key else ([f"{key} {year}"] if year else []) + [f"{key} tmdb {tmdb_id}"]
+    for candidate in keys:
+        cur.execute(
+            "INSERT INTO titles (kind, title, year, tmdb_id, normalized_key) "
+            "VALUES ('series', %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING id",
+            (name, year, tmdb_id, candidate))
+        inserted = cur.fetchone()
+        if inserted:
+            return str(inserted["id"]), True
+    # Lost a race with a concurrent writer: it created this tmdb_id first.
+    cur.execute("SELECT id FROM titles WHERE kind = 'series' AND tmdb_id = %s", (tmdb_id,))
+    row = cur.fetchone()
+    if not row:
+        raise RuntimeError(f"could not create or find series for tmdb id {tmdb_id}")
+    return str(row["id"]), False
 
 
 def get_or_create_movie_by_tmdb(cur, tmdb_id, title: str, year: int | None = None) -> str:

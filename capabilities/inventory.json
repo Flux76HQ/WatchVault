@@ -3023,6 +3023,49 @@
     ]
   },
   {
+    "id": "action.del.connections-param-series-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/RunningSeries.tsx",
+      "anchor": "`/connections/${connectionId}/series/${s.sonarr_id}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing DEL /connections/:param/series/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/components/RunningSeries.test.tsx"
+    ]
+  },
+  {
     "id": "action.post.connections",
     "kind": "action",
     "source": {
@@ -3149,6 +3192,49 @@
     },
     "evidence": [
       "planned:phase-7"
+    ]
+  },
+  {
+    "id": "action.post.connections-param-series-param-tags-param",
+    "kind": "action",
+    "source": {
+      "path": "frontend/src/components/RunningSeries.tsx",
+      "anchor": "`/connections/${connectionId}/series/${s.sonarr_id}/tags/${tagId}`"
+    },
+    "behavior": "Authorized users can invoke the existing POST /connections/:param/series/:param/tags/:param operation and receive its current reconciliation or feedback behavior.",
+    "dimensions": {
+      "permissions": [
+        "ingest.write"
+      ],
+      "scopes": [
+        "personal",
+        "household"
+      ],
+      "themes": [
+        "dark",
+        "light",
+        "system"
+      ],
+      "locales": [
+        "de",
+        "en",
+        "es",
+        "fr",
+        "it",
+        "nl"
+      ],
+      "states": [
+        "pending",
+        "success",
+        "error"
+      ]
+    },
+    "owner": {
+      "requirement": "ADMN-04",
+      "phase": 7
+    },
+    "evidence": [
+      "frontend/src/components/RunningSeries.test.tsx"
     ]
   },
   {

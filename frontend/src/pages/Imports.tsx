@@ -4,6 +4,7 @@ import { useT } from "../lib/i18n";
 import { api, ApiError } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { Loading, Section } from "../components/ui";
+import { RunningSeries } from "../components/RunningSeries";
 import { IconImport, IconRefresh, IconPlus, IconCheck } from "../components/icons";
 import { fmtDate } from "../lib/format";
 
@@ -102,6 +103,10 @@ function Connections({ providers, connections, reload }: {
   const [reauthSecret, setReauthSecret] = useState("");
   // Account→profile mapping panel (attribute synced history per source user).
   const [mappingId, setMappingId] = useState<string | null>(null);
+  // Sonarr: the connection whose "Running series" panel is open, and a counter the
+  // panel reloads on after a Sync.
+  const [seriesId, setSeriesId] = useState<string | null>(null);
+  const [seriesRev, setSeriesRev] = useState(0);
   const [accounts, setAccounts] = useState<{ id: string; name: string; user_id: string | null }[] | null>(null);
   const [accountSource, setAccountSource] = useState<string>("");
   const [accountBusy, setAccountBusy] = useState(false);
@@ -302,6 +307,7 @@ function Connections({ providers, connections, reload }: {
       toast(res.calendar != null
         ? t("imports.calendarSynced", { count: res.calendar })
         : t("imports.synced", { inserted: res.inserted, duplicates: res.duplicates }));
+      setSeriesRev((n) => n + 1);
       reload();
     } catch (e) {
       toast(e instanceof ApiError ? e.message : t("imports.syncFailed"), "err");
@@ -444,7 +450,7 @@ function Connections({ providers, connections, reload }: {
         <div>
           {connections.map((c) => (
             <div key={c.id} className="col" style={{ gap: 0 }}>
-              <div className="list-row">
+              <div className="list-row conn-row">
                 <div className="col" style={{ flex: 1, gap: 2 }}>
                   <strong>{c.name}</strong>
                   <span className="caption">
@@ -453,6 +459,12 @@ function Connections({ providers, connections, reload }: {
                     {c.last_status ? ` · ${c.last_status}` : ""}
                   </span>
                 </div>
+                {c.provider_key === "sonarr" && (
+                  <button className="btn-ghost btn-sm" aria-expanded={seriesId === c.id}
+                    onClick={() => setSeriesId(seriesId === c.id ? null : c.id)}>
+                    {t("imports.runningSeries")}
+                  </button>
+                )}
                 {can("ingest.write") && (
                   <>
                     {providerSupportsLibraries(c.provider_key) && (
@@ -483,6 +495,14 @@ function Connections({ providers, connections, reload }: {
                   </>
                 )}
               </div>
+              {seriesId === c.id && (
+                <div className="card" style={{ margin: "0 0 12px", background: "var(--bg)" }}>
+                  <RunningSeries connectionId={c.id} reloadKey={seriesRev} />
+                  <div className="row" style={{ gap: 8, marginTop: 10 }}>
+                    <button className="btn-ghost btn-sm" onClick={() => setSeriesId(null)}>{t("common.close")}</button>
+                  </div>
+                </div>
+              )}
               {editing === c.id && (
                 <div className="card" style={{ margin: "0 0 12px", background: "var(--bg)" }}>
                   <label>{t("imports.editLibrariesTitle")}</label>

@@ -13,6 +13,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from ..catalog import enqueue_enrich
 from ..db import connection
 from ..util import normalize_text, now_utc
 from .models import NormalizedEvent
@@ -389,17 +390,8 @@ def _resolve_session_title(cur, evt: ScrobbleEvent) -> tuple[Optional[str], bool
     return _resolve_title(cur, "movie", title, evt.year, evt.tmdb_id, {})
 
 
-def _maybe_enqueue_enrich(cur, title_id: str) -> None:
-    """Queue TMDB enrichment for a freshly-seen title so its poster shows up while
-    it is still playing — unless it is already enriched or a job is pending."""
-    cur.execute(
-        "INSERT INTO background_jobs (kind, payload) "
-        "SELECT 'enrich_title', %s::jsonb "
-        "WHERE EXISTS (SELECT 1 FROM titles WHERE id = %s AND enriched_at IS NULL) "
-        "  AND NOT EXISTS (SELECT 1 FROM background_jobs WHERE kind = 'enrich_title' "
-        "    AND payload->>'title_id' = %s AND status = 'pending')",
-        (json.dumps({"title_id": str(title_id)}), str(title_id), str(title_id)),
-    )
+# Shared with the catalog (a tagged Sonarr series queues its enrichment the same way).
+_maybe_enqueue_enrich = enqueue_enrich
 
 
 def _lookup_episode(cur, title_id, season: int, episode_name: str) -> Optional[dict]:
