@@ -52,6 +52,9 @@ export const IconClose = (p: SVGProps<SVGSVGElement>) => (
 export const IconCheck = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="m5 12 5 5 9-10" /></svg>
 );
+export const IconTag = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" /><circle cx="8" cy="8" r="1.4" /></svg>
+);
 export const IconSparkles = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" /></svg>
 );

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoA11yViolations } from "../test/a11y";
@@ -24,21 +24,23 @@ const user = {
   household_id: "household-1", household_name: "Test Household",
   permissions: ["catalog.read"],
 };
+const writer = { ...user, permissions: ["catalog.read", "ingest.write"] };
 
 const FOLLOW = { id: "tg-f", name: "Follow", color: "#f0a21a" };
 const BINGE = { id: "tg-b", name: "Binge", color: null };
 
 const item = (over: Partial<WhatsNextItem>): WhatsNextItem => ({
   key: "w:t1", title_id: "t1", title: "Andor", year: 2022, kind: "series", poster: null,
-  tags: [FOLLOW], state: "aired", season: 1, episode: 2, episode_name: "Aldhani",
+  tags: [FOLLOW], state: "aired", season: 1, episode: 2, episode_id: "ep-12", episode_name: "Aldhani",
   air_date: "2026-10-01", air_at: null, available_at: null, behind: 0, runtime_minutes: 45, ...over,
 });
 
 const tags = (n = 2) => [{ ...FOLLOW, count: n }, { ...BINGE, count: 1 }];
 
-function serve(respond: (params: Record<string, unknown>) => unknown) {
+function serve(respond: (params: Record<string, unknown>) => unknown, who = user) {
   apiMock.get.mockImplementation((path: string, params?: Record<string, unknown>) => {
-    if (path === "/auth/status") return Promise.resolve({ bootstrapped: true, user });
+    if (path === "/auth/status") return Promise.resolve({ bootstrapped: true, user: who });
+    if (path === "/tags") return Promise.resolve([FOLLOW, BINGE]);
     if (path === "/preferences") return Promise.resolve({ theme: "system", accent: "#f0a21a", language: "en", expert: false, default_profile: "user-1" });
     if (path === "/profiles") return Promise.resolve([]);
     if (path === "/stats/whats-next") return Promise.resolve(respond(params ?? {}));
@@ -47,7 +49,7 @@ function serve(respond: (params: Record<string, unknown>) => unknown) {
 }
 
 describe("WhatsNext", () => {
-  beforeEach(() => { apiMock.get.mockReset(); });
+  beforeEach(() => { apiMock.get.mockReset(); apiMock.post.mockReset(); apiMock.del.mockReset(); });
 
   it("renders nothing while no series is tagged", async () => {
     serve(() => ({ tags: [], items: [] }));
@@ -116,5 +118,57 @@ describe("WhatsNext", () => {
     renderWithApp(<WhatsNext scope="all" />);
     fireEvent.click(await screen.findByRole("button", { name: /Binge/ }));
     await vi.waitFor(() => expect(apiMock.get).toHaveBeenLastCalledWith("/stats/whats-next", { profile: "all" }));
+  });
+  it("offers no actions to someone who cannot write", async () => {
+    serve(() => ({ tags: tags(), items: [item({})] }));
+    renderWithApp(<WhatsNext scope="user-1" />);
+    await screen.findByRole("link", { name: /Andor/ });
+    expect(screen.queryByRole("button", { name: /Mark watched/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Tags/ })).toBeNull();
+  });
+
+  it("marks the shown episode watched for the chosen profile and reloads the block", async () => {
+    let watched = false;
+    serve(() => ({
+      tags: tags(),
+      items: [watched ? item({ episode: 3, episode_id: "ep-13" }) : item({})],
+    }), writer);
+    apiMock.post.mockImplementation(() => { watched = true; return Promise.resolve({ ok: true }); });
+    const { container } = renderWithApp(<WhatsNext scope="user-1" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Mark watched: Andor" }));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/episodes/ep-12/watch",
+      { user_id: "user-1", date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) }));
+    expect(await screen.findByText("S1·E3")).toBeInTheDocument();     // the block moved on
+    await expectNoA11yViolations(container);
+  });
+
+  it("records the watch for the signed-in person in the household view", async () => {
+    serve(() => ({ tags: tags(), items: [item({})] }), writer);
+    apiMock.post.mockResolvedValue({ ok: true });
+    renderWithApp(<WhatsNext scope="all" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Mark watched: Andor" }));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith("/episodes/ep-12/watch",
+      { date: expect.any(String) }));
+  });
+
+  it("has nothing to mark while the catalog has no episode, but still manages tags", async () => {
+    serve(() => ({ tags: tags(), items: [item({ state: "pending", episode_id: null, season: null, episode: null })] }), writer);
+    renderWithApp(<WhatsNext scope="user-1" />);
+    await screen.findByRole("link", { name: /Andor/ });
+    expect(screen.queryByRole("button", { name: /Mark watched/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Tags: Andor" })).toBeInTheDocument();
+  });
+
+  it("removes a tag through the series' tag endpoint and reloads", async () => {
+    serve(() => ({ tags: tags(), items: [item({})] }), writer);
+    apiMock.del.mockResolvedValue({ ok: true });
+    renderWithApp(<WhatsNext scope="user-1" />);
+    const toggle = await screen.findByRole("button", { name: "Tags: Andor" });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(apiMock.del).toHaveBeenCalledWith("/titles/t1/tags/tg-f"));
+    await waitFor(() => expect(apiMock.get.mock.calls.filter((c) => c[0] === "/stats/whats-next").length).toBeGreaterThan(1));
   });
 });
