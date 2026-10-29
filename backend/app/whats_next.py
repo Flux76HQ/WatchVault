@@ -48,7 +48,7 @@ def _item(row: dict, state: str, poster, **fields) -> dict:
                  for t in row.get("tags") or []],
         "state": state, "season": None, "episode": None, "episode_id": None, "episode_name": None,
         "air_date": None, "air_at": None, "available_at": None, "behind": 0,
-        "runtime_minutes": None,
+        "runtime_minutes": None, "remaining": None, "total": None,
     }
     base.update(fields)
     base["air_date"] = _iso(base["air_date"])
@@ -74,7 +74,8 @@ def _sort_key(item: dict):
 
 def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str, set],
                      ready: list[dict], *, today: dt.date, tag: str | None = None,
-                     poster=lambda p: p, limit: int = LIMIT) -> dict:
+                     poster=lambda p: p, limit: int | None = LIMIT,
+                     include_idle: bool = False) -> dict:
     """The block's payload: ``{"tags": [...], "items": [...]}``.
 
     ``series`` rows: ``title_id, title, year, tmdb_id, poster_path, tags[{id,name,color}],
@@ -82,7 +83,10 @@ def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str
     air_date, runtime_minutes`` (any order; season 0 / specials are ignored).
     ``watched``: title_id -> {(season, episode)}, "anyone in scope watched it" counts.
     ``ready``: calendar rows ``tmdb_id, season, episode, available_at``.
-    The tag counts are taken before the ``tag`` filter so the chips stay put."""
+    The tag counts are taken before the ``tag`` filter so the chips stay put.
+    ``include_idle`` also keeps a series that is fully watched with nothing coming
+    (``caught_up`` without a date) and ``limit=None`` removes the cap: the page that
+    lists every tagged series, where the dashboard block stays short and busy."""
     by_title: dict[str, list[dict]] = {}
     for e in episodes:
         if (e.get("season") or 0) > 0:
@@ -110,8 +114,11 @@ def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str
             todo = [e for e in eps if (e["season"], e["episode"]) not in seen]
             if not todo:
                 if na_date is None or na_date < today:
-                    continue
-                item = _item(row, "caught_up", poster, air_date=na_date, air_at=row["next_airing"])
+                    if not include_idle:
+                        continue
+                    item = _item(row, "caught_up", poster)
+                else:
+                    item = _item(row, "caught_up", poster, air_date=na_date, air_at=row["next_airing"])
             else:
                 first = todo[0]
                 fields = {"season": first["season"], "episode": first["episode"],
@@ -131,6 +138,7 @@ def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str
                     if fields["air_date"] is not None and fields["air_date"] == na_date:
                         fields["air_at"] = row["next_airing"]
                     item = _item(row, "upcoming", poster, **fields)
+            item["remaining"], item["total"] = len(todo), len(eps)
         built.append((_sort_key(item), item))
 
     built.sort(key=lambda p: p[0])
@@ -145,7 +153,7 @@ def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str
 
     if tag:
         items = [i for i in items if any(t["id"] == tag for t in i["tags"])]
-    return {"tags": tags, "items": items[:limit]}
+    return {"tags": tags, "items": items if limit is None else items[:limit]}
 
 
 def fetch_series(household_id: str) -> list[dict]:
@@ -195,11 +203,13 @@ def fetch_ready(household_id: str, tmdb_ids: list[int]) -> list[dict]:
 
 
 def whats_next(household_id: str, user_ids: list[str], poster=lambda p: p,
-               tag: str | None = None, today: dt.date | None = None) -> dict:
+               tag: str | None = None, today: dt.date | None = None,
+               show_all: bool = False) -> dict:
     today = today or dt.datetime.now(dt.timezone.utc).date()
     series = fetch_series(household_id)
     title_ids = [str(r["title_id"]) for r in series]
     episodes = fetch_episodes(title_ids)
     ready = fetch_ready(household_id, sorted({r["tmdb_id"] for r in series if r["tmdb_id"]}))
     return build_whats_next(series, episodes, fetch_watched(user_ids, title_ids), ready,
-                            today=today, tag=tag, poster=poster)
+                            today=today, tag=tag, poster=poster,
+                            limit=None if show_all else LIMIT, include_idle=show_all)

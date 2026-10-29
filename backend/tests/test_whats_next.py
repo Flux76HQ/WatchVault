@@ -165,7 +165,7 @@ def test_item_shape():
     item = only(run([series("a")], [ep("a", 1, 1, D(2026, 10, 1), name="Pilot")]))
     assert set(item) == {"key", "title_id", "title", "year", "kind", "poster", "tags", "state",
                          "season", "episode", "episode_id", "episode_name", "air_date", "air_at", "available_at",
-                         "behind", "runtime_minutes"}
+                         "behind", "runtime_minutes", "remaining", "total"}
     assert item["episode_id"] == "ep-a-1-1"
     assert item["key"] == "w:a" and item["episode_name"] == "Pilot" and item["runtime_minutes"] == 45
     assert item["tags"] == [{"id": "ta", "name": "Anime", "color": "#f00"}]
@@ -178,3 +178,42 @@ def test_episode_id_is_that_of_the_next_unwatched_episode_and_absent_when_idle()
     caught = only(run([series("a", next_airing=na)], eps, {"a": {(1, 1), (1, 2)}}))
     assert caught["state"] == "caught_up" and caught["episode_id"] is None
     assert only(run([series("a")]))["episode_id"] is None            # pending
+
+
+def test_progress_counts_cover_the_known_episodes():
+    eps = [ep("a", 1, n, D(2026, 10, n)) for n in (1, 2, 3, 4)] + [ep("a", 0, 1, D(2026, 1, 1))]
+    item = only(run([series("a")], eps, {"a": {(1, 1), (1, 2)}}))
+    assert (item["remaining"], item["total"]) == (2, 4)             # the special is not counted
+    pending = only(run([series("p")]))
+    assert pending["remaining"] is None and pending["total"] is None
+
+
+def test_idle_series_only_appear_when_asked_for():
+    eps = [ep("a", 1, 1, D(2026, 10, 1))]
+    seen = {"a": {(1, 1)}}
+    assert run([series("a")], eps, seen)["items"] == []
+    out = run([series("a", tags=(TAG_A,))], eps, seen, include_idle=True)
+    item = only(out)
+    assert item["state"] == "caught_up" and item["air_date"] is None and item["air_at"] is None
+    assert (item["remaining"], item["total"]) == (0, 1)
+    assert [t["id"] for t in out["tags"]] == ["ta"]                   # and it counts for its tag
+    # a future airing is still shown with its date, idle or not
+    na = dt.datetime(2026, 11, 3, 20, tzinfo=UTC)
+    assert only(run([series("a", next_airing=na)], eps, seen, include_idle=True))["air_date"] == "2026-11-03"
+
+
+def test_idle_series_sort_after_dated_ones_and_before_pending():
+    na = dt.datetime(2026, 11, 3, 20, tzinfo=UTC)
+    rows = [series("idle", title="Idle", tmdb=1), series("dated", title="Dated", tmdb=2, next_airing=na),
+            series("pend", title="Pend", tmdb=3), series("aired", title="Aired", tmdb=4)]
+    eps = [ep("idle", 1, 1, D(2026, 10, 1)), ep("dated", 1, 1, D(2026, 10, 1)), ep("aired", 1, 1, D(2026, 10, 1))]
+    seen = {"idle": {(1, 1)}, "dated": {(1, 1)}}
+    out = run(rows, eps, seen, include_idle=True)
+    assert [i["title_id"] for i in out["items"]] == ["aired", "dated", "idle", "pend"]
+
+
+def test_no_limit_returns_everything():
+    rows = [series(str(i), title=f"s{i:02}", tmdb=i) for i in range(60)]
+    eps = [ep(r["title_id"], 1, 1, D(2026, 10, 1)) for r in rows]
+    assert len(run(rows, eps)["items"]) == 48                          # the dashboard cap
+    assert len(run(rows, eps, limit=None)["items"]) == 60

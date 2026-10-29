@@ -481,10 +481,13 @@ def continue_watching():
 def whats_next_block():
     """The dashboard "What's next" block: for every tagged series the next episode
     nobody in scope has watched, and its state. ``?tag=`` narrows the items to one
-    tag; the returned ``tags`` (with counts) always cover every tagged series."""
+    tag; the returned ``tags`` (with counts) always cover every tagged series.
+    ``?all=1`` is the full list for the What's next page: no cap, and series that
+    are fully watched with nothing coming are kept too."""
     user = current_user()
     tag = request.args.get("tag") or None
-    return jsonify(whats_next(str(user["household_id"]), _ids(), poster_url, tag))
+    show_all = request.args.get("all") in ("1", "true")
+    return jsonify(whats_next(str(user["household_id"]), _ids(), poster_url, tag, show_all=show_all))
 
 
 @bp.get("/unfinished")
