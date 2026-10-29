@@ -945,3 +945,15 @@ input[type="file"]::file-selector-button {
   background: var(--accent-subtle); color: var(--accent-readable);
 }
 input[type="file"]::file-selector-button:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* ── Continue watching: a rail of posters ───────────────────────────────── */
+.poster-rail {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 150px; gap: var(--space-4);
+  overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: var(--space-4); overscroll-behavior-x: contain;
+  padding: 6px var(--space-4) var(--space-3); margin: -6px calc(-1 * var(--space-4)) 0;
+  scrollbar-width: thin;
+}
+.rail-item { scroll-snap-align: start; min-width: 0; }
+@media (max-width: 520px) { .poster-rail { grid-auto-columns: 124px; gap: var(--space-3); } }
+.poster-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 1; background: rgba(255, 255, 255, 0.28); }
+.poster-progress i { display: block; height: 100%; background: var(--accent); border-radius: 0 2px 2px 0; }

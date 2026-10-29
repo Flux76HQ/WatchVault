@@ -145,7 +145,7 @@ export function Stat({ value, label }: { value: ReactNode; label: string }) {
 }
 
 export function Poster({
-  poster, title, subtitle, badge, kind, to, enrichId, titleId, unknown, onDismiss, dismissLabel,
+  poster, title, subtitle, badge, kind, to, enrichId, titleId, unknown, onDismiss, dismissLabel, progress,
 }: {
   poster?: string | null;
   title: string;
@@ -158,6 +158,8 @@ export function Poster({
   unknown?: boolean;
   onDismiss?: () => Promise<void> | void;
   dismissLabel?: string;
+  /** 0–100: how far into it the person got; drawn as a thin bar (decorative — put the text in `subtitle`). */
+  progress?: number | null;
 }) {
   const ref = useRef<HTMLAnchorElement | HTMLDivElement | null>(null);
   const { t } = useT();
@@ -304,6 +306,11 @@ export function Poster({
           </div>
         )}
         {badge && <span className="badge">{badge}</span>}
+        {progress != null && (
+          <span className="poster-progress" aria-hidden="true">
+            <i style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+          </span>
+        )}
       </div>
       <div className="poster-cap">
         <div className="t">{title}</div>

@@ -14,6 +14,9 @@ from ..models import NormalizedEvent
 class SourceAdapter:
     id: str = "base"
     ingest_type: str = "csv"            # 'csv' | 'json' | 'api'
+    # What an API sync of this adapter yields: 'history' (watch events, the default)
+    # or 'calendar' (items ready to watch, e.g. Sonarr/Radarr — see fetch_calendar).
+    produces: str = "history"
     display_name: str = "Base"
     # Per-adapter connection config schema (API adapters). Each field:
     #   {"key", "label", "type": 'text'|'password'|'url', "placeholder", "required", "help"}
@@ -24,6 +27,14 @@ class SourceAdapter:
 
     def fetch_history(self, config: dict, cursor: dict) -> tuple[list[NormalizedEvent], dict]:
         raise NotImplementedError(f"{self.id} does not support API sync")
+
+    def fetch_calendar(self, config: dict, start, end) -> list[dict]:
+        """Items of a date window that are ready to watch (calendar sources only).
+
+        Returns dicts shaped like ``calendar_items`` rows (``source``, ``kind``,
+        ``external_key``, ``title``, ``available_at``, ...). Adapters with
+        ``produces == "calendar"`` implement this instead of ``fetch_history``."""
+        raise NotImplementedError(f"{self.id} does not provide a calendar")
 
     def fetch_title_history(self, config: dict, title_ref: dict) -> list[NormalizedEvent]:
         """Fetch the full watch history for a single title from this source.

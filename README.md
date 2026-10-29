@@ -126,7 +126,12 @@ gestures (no pinch-zoom, no long-press text callouts).</sub>
   not touch the core. Ships with:
   - **Netflix** — official "Viewing activity → Download all" CSV importer.
   - **Plex / Jellyfin / Trakt** — direct API sync (watch history), on-demand.
+  - **Sonarr / Radarr** — calendar sources: they feed **Continue watching** with what they
+    have downloaded (no watch history).
   - **Generic CSV/JSON** — for HBO Max, SkyShowtime, Videoland, Disney+, Prime…
+- **Continue watching** — a dashboard block with what was left half-watched (from live
+  scrobbles, e.g. a Plex webhook) and what Sonarr/Radarr downloaded recently that nobody has
+  watched yet. See [Continue watching](#continue-watching).
 - **Live scrobbling / Now Playing** — push real-time playback into WatchVault so streaming
   apps that have no history export still get tracked. A native **Plex webhook** and a
   generic JSON endpoint (for **Home Assistant**, **AppleTV** shortcuts, etc.) feed a
@@ -462,6 +467,10 @@ username to `me`). Your own history — including private — is then read via `
 the access token is refreshed automatically before it expires. A public profile works with just
 the Client ID. Then **Sync** on demand.
 
+**Sonarr / Radarr** — **Imports → API sync connections → Add**, pick *Sonarr* or *Radarr*,
+enter the server URL (`http://<host>:8989` / `:7878`) and the API key (Settings → General →
+Security). They are *calendar* sources, not watch history: see [Continue watching](#continue-watching).
+
 **Other services** — export your data (manual CSV or a GDPR/data request) and import it via
 the *Generic CSV/JSON* provider. The generic adapter auto-detects common column names
 (`title`, `date`, `season`, `episode`, `duration`/`minutes`, `progress`, …).
@@ -489,6 +498,29 @@ completion threshold.
 Because it's gated behind Expert Mode, the whole scrobbling UI stays hidden for everyday
 household members.
 
+### Continue watching
+
+The dashboard's **Continue watching** block (all members, not only Expert Mode) shows two
+kinds of card, and hides itself while there is nothing to show:
+
+- **Half-watched** — something a member started and stopped. It comes from the live
+  scrobble sessions (the Plex webhook, Home Assistant, Apple TV above), so it only knows
+  about playback that started after scrobbling was switched on; a bar and "n min left" show
+  how far they got. Playback that is running right now stays on **Now playing**. Starts
+  below 2 %, at or above the completion threshold, or older than 60 days are left out, and
+  so is anything that was watched to the end afterwards.
+- **Ready to watch** — an episode or film that **Sonarr / Radarr** have already downloaded
+  (it has a file) in the last 14 days and nobody in the selected profile has watched.
+  Several waiting episodes of one series become one card for the earliest, with "+n more".
+  Titles WatchVault doesn't know yet (a new film nobody has watched) show Sonarr/Radarr's own
+  poster and have no title page to open; known titles link to theirs. In the household view
+  an item counts as watched once *any* member has watched it.
+
+Sonarr and Radarr connections are refreshed by the worker every 15 minutes, or at once with
+**Sync**; the dashboard reads the stored calendar and never calls them itself. Only items
+with a file are kept, so upcoming episodes and films that are still being fetched don't
+appear. API: `GET /api/stats/continue?profile=<id|all>`.
+
 ### Starting over
 
 To wipe everything and begin from an empty database, go to **Settings → Danger zone →
@@ -505,6 +537,8 @@ admin-only (`settings.manage`) and cannot be undone.
 1. Create `backend/app/ingest/adapters/<name>.py` with a class extending `SourceAdapter`
    and implementing `import_file()` (file-based) and/or `fetch_history()` (API-based),
    returning `NormalizedEvent`s.
+   A *calendar* source (Sonarr/Radarr style) sets `produces = "calendar"` and implements
+   `fetch_calendar()` instead; see `adapters/arr.py`.
 2. Register it in `backend/app/ingest/adapters/__init__.py`.
 3. Add a row to the `providers` seed (migration `0003_domain.sql`) pointing at your adapter.
 
