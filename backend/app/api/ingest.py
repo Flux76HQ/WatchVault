@@ -15,6 +15,7 @@ from ..ingest import (ingest_events, prune_connection_libraries,
                       add_manual_movie, add_manual_episode, add_manual_season,
                       delete_episode_watch, delete_movie_watch, delete_title)
 from ..ingest.adapters import get_adapter
+from ..ingest.calendar import refresh_calendar
 from ..auth.sessions import current_user, require_perm
 from ..catalog import get_or_create_movie_by_tmdb
 from ..plugins import enrich_title, runtime
@@ -34,13 +35,17 @@ def list_providers():
     out = []
     for r in rows:
         try:
-            fields = get_adapter(r["adapter"]).config_fields
+            adapter = get_adapter(r["adapter"])
+            fields, produces = adapter.config_fields, adapter.produces
         except KeyError:
-            fields = []
+            fields, produces = [], "history"
         out.append({
             "id": str(r["id"]), "key": r["key"], "name": r["name"],
             "ingest_type": r["ingest_type"], "adapter": r["adapter"], "color": r["color"],
             "config_fields": fields,
+            # 'calendar' providers (Sonarr/Radarr) feed "Continue watching"; they
+            # never carry watch events, so platform filters leave them out.
+            "role": "calendar" if produces == "calendar" else "history",
         })
     return jsonify(out)
 
@@ -387,6 +392,12 @@ def sync_connection(conn_id: str):
     )
     if not conn:
         return jsonify({"error": "not found"}), 404
+
+    if get_adapter(conn["adapter"]).produces == "calendar":
+        try:
+            return jsonify({"ok": True, **refresh_calendar(conn)})
+        except Exception as exc:  # noqa: BLE001 — refresh_calendar already stored the status
+            return jsonify({"error": f"sync failed: {exc}"}), 400
 
     target = _target_user(user)
     try:

@@ -299,7 +299,9 @@ function Connections({ providers, connections, reload }: {
     setBusy(id);
     try {
       const res = await api.post(`/connections/${id}/sync`);
-      toast(t("imports.synced", { inserted: res.inserted, duplicates: res.duplicates }));
+      toast(res.calendar != null
+        ? t("imports.calendarSynced", { count: res.calendar })
+        : t("imports.synced", { inserted: res.inserted, duplicates: res.duplicates }));
       reload();
     } catch (e) {
       toast(e instanceof ApiError ? e.message : t("imports.syncFailed"), "err");
@@ -344,7 +346,7 @@ function Connections({ providers, connections, reload }: {
         )}
       </div>
       <p className="caption" style={{ marginBottom: 16 }}>
-        {t("imports.apiHelp")}
+        {t("imports.apiHelp")} {t("imports.apiHelpCalendar")}
       </p>
 
       {adding && (

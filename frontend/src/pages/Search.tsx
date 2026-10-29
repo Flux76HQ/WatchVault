@@ -8,7 +8,7 @@ import { IconSearch } from "../components/icons";
 import { fmtHours, fmtDate } from "../lib/format";
 import { AddCinemaFilmButton } from "../components/AddCinemaFilm";
 
-interface Provider { key: string; name: string; }
+interface Provider { key: string; name: string; role?: string; }
 
 const PAGE = 60;
 
@@ -38,7 +38,7 @@ export function Search() {
   // previous filter set can detect it is stale and drop its appended results.
   const reqRef = useRef(0);
 
-  useEffect(() => { api.get("/providers").then(setProviders).catch(() => {}); }, []);
+  useEffect(() => { api.get("/providers").then((ps: Provider[]) => setProviders(ps.filter((p) => p.role !== "calendar"))).catch(() => {}); }, []);
   useEffect(() => { api.get("/tags").then(setTagOptions).catch(() => {}); }, []);
 
   // Available genres / release years for the current scope, driving the filter

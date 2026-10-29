@@ -132,6 +132,7 @@ export async function installApiFixture(page: Page, theme: Theme): Promise<ApiFi
       ]);
     }
     if (key === "GET /stats/unknown") return json(route, []);
+    if (key === "GET /stats/continue") return json(route, []);
     if (key === "GET /stats/month") {
       const watchedTitle = state.watchDates.length
         ? [{ ...TITLE, watched_at: state.watchDates[0], provider: PROVIDER.id }]

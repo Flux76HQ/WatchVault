@@ -8,7 +8,8 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 
 from ..db import query_all, query_one, connection
-from ..auth.sessions import require_perm
+from ..auth.sessions import current_user, require_perm
+from ..continue_watching import continue_items
 from ._common import EFF_SECONDS, poster_url, scope_user_ids
 
 bp = Blueprint("stats", __name__, url_prefix="/api/stats")
@@ -461,6 +462,15 @@ def genre_titles():
             for r in rows
         ],
     })
+
+
+@bp.get("/continue")
+@require_perm("catalog.read")
+def continue_watching():
+    """The dashboard "Continue watching" block: half-watched playback plus what
+    Sonarr/Radarr have ready that nobody in scope has watched yet."""
+    user = current_user()
+    return jsonify(continue_items(str(user["household_id"]), _ids(), poster_url))
 
 
 @bp.get("/unfinished")

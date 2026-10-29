@@ -91,6 +91,10 @@ def _run_sync(connection_id: str) -> dict:
         "SELECT id FROM users WHERE household_id = %s AND deleted_at IS NULL "
         "ORDER BY created_at LIMIT 1", (conn["household_id"],))
     adapter = get_adapter(conn["adapter"])
+    if adapter.produces == "calendar":
+        # Sonarr/Radarr: refresh the "ready to watch" calendar, no watch history.
+        from app.ingest.calendar import refresh_calendar
+        return refresh_calendar(conn)
     config = conn["config"] or {}
     new_config, changed = adapter.prepare_config(config)
     if changed:
