@@ -564,6 +564,12 @@ nothing is tagged. Sonarr data from a disabled connection is ignored. Episode da
 TMDB, which keeps the first air date it stored for an episode, so a rescheduled episode can
 keep its old date. API: `GET /api/stats/whats-next?profile=<id|all>&tag=<tag id>`.
 
+Anyone who may write (`ingest.write`) also gets two buttons under each card. The **tick** marks
+the shown episode watched today (`POST /api/episodes/<id>/watch`, for the selected profile, or for
+whoever is signed in in the household view) and the block moves on to the next episode; there is
+no undo in the block, remove the watch on the title page. The **tag** button opens the series'
+tags: add one, or remove the last one to take the series out of this overview.
+
 ### Starting over
 
 To wipe everything and begin from an empty database, go to **Settings → Danger zone →

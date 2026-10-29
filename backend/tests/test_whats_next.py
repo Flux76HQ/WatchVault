@@ -23,8 +23,8 @@ def series(tid, title="Show", tags=(TAG_A,), tmdb=100, next_airing=None, **over)
 
 
 def ep(tid, s, e, air, name=None):
-    return {"title_id": tid, "season": s, "episode": e, "name": name or f"E{e}", "air_date": air,
-            "runtime_minutes": 45}
+    return {"episode_id": f"ep-{tid}-{s}-{e}", "title_id": tid, "season": s, "episode": e,
+            "name": name or f"E{e}", "air_date": air, "runtime_minutes": 45}
 
 
 def run(series_rows, episodes=(), watched=None, ready=(), **kw):
@@ -164,7 +164,17 @@ def test_limit():
 def test_item_shape():
     item = only(run([series("a")], [ep("a", 1, 1, D(2026, 10, 1), name="Pilot")]))
     assert set(item) == {"key", "title_id", "title", "year", "kind", "poster", "tags", "state",
-                         "season", "episode", "episode_name", "air_date", "air_at", "available_at",
+                         "season", "episode", "episode_id", "episode_name", "air_date", "air_at", "available_at",
                          "behind", "runtime_minutes"}
+    assert item["episode_id"] == "ep-a-1-1"
     assert item["key"] == "w:a" and item["episode_name"] == "Pilot" and item["runtime_minutes"] == 45
     assert item["tags"] == [{"id": "ta", "name": "Anime", "color": "#f00"}]
+
+
+def test_episode_id_is_that_of_the_next_unwatched_episode_and_absent_when_idle():
+    eps = [ep("a", 1, 1, D(2026, 10, 1)), ep("a", 1, 2, D(2026, 10, 2))]
+    assert only(run([series("a")], eps, {"a": {(1, 1)}}))["episode_id"] == "ep-a-1-2"
+    na = dt.datetime(2026, 11, 3, 20, tzinfo=UTC)
+    caught = only(run([series("a", next_airing=na)], eps, {"a": {(1, 1), (1, 2)}}))
+    assert caught["state"] == "caught_up" and caught["episode_id"] is None
+    assert only(run([series("a")]))["episode_id"] is None            # pending

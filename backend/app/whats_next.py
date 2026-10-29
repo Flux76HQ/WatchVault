@@ -46,7 +46,7 @@ def _item(row: dict, state: str, poster, **fields) -> dict:
         "poster": poster(row.get("poster_path")) or row.get("sonarr_poster"),
         "tags": [{"id": str(t["id"]), "name": t["name"], "color": t.get("color")}
                  for t in row.get("tags") or []],
-        "state": state, "season": None, "episode": None, "episode_name": None,
+        "state": state, "season": None, "episode": None, "episode_id": None, "episode_name": None,
         "air_date": None, "air_at": None, "available_at": None, "behind": 0,
         "runtime_minutes": None,
     }
@@ -78,7 +78,7 @@ def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str
     """The block's payload: ``{"tags": [...], "items": [...]}``.
 
     ``series`` rows: ``title_id, title, year, tmdb_id, poster_path, tags[{id,name,color}],
-    next_airing, sonarr_poster``. ``episodes``: ``title_id, season, episode, name,
+    next_airing, sonarr_poster``. ``episodes``: ``episode_id, title_id, season, episode, name,
     air_date, runtime_minutes`` (any order; season 0 / specials are ignored).
     ``watched``: title_id -> {(season, episode)}, "anyone in scope watched it" counts.
     ``ready``: calendar rows ``tmdb_id, season, episode, available_at``.
@@ -115,7 +115,7 @@ def build_whats_next(series: list[dict], episodes: list[dict], watched: dict[str
             else:
                 first = todo[0]
                 fields = {"season": first["season"], "episode": first["episode"],
-                          "episode_name": first.get("name"),
+                          "episode_id": first.get("episode_id"), "episode_name": first.get("name"),
                           "runtime_minutes": first.get("runtime_minutes"),
                           "air_date": first.get("air_date")}
                 aired = sum(1 for e in todo if e.get("air_date") and e["air_date"] <= today)
@@ -176,7 +176,8 @@ def fetch_episodes(title_ids: list[str]) -> list[dict]:
     if not title_ids:
         return []
     return query_all(
-        "SELECT title_id::text AS title_id, season, episode, name, air_date, runtime_minutes "
+        "SELECT id::text AS episode_id, title_id::text AS title_id, season, episode, name, air_date, "
+        "  runtime_minutes "
         "FROM title_episodes WHERE title_id = ANY(%s::uuid[]) AND season > 0",
         (title_ids,))
 
