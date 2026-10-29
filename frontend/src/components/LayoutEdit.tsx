@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useT } from "../lib/i18n";
 import { IconEye, IconEyeOff, IconGrip } from "./icons";
 
@@ -84,6 +84,42 @@ export function resolveLayout<Id extends string>(opts: {
   };
 }
 
+// While a block is being dragged, scroll the page when the pointer nears the top
+// or bottom edge of the window. Native drag-and-drop scrolls hardly at all, so a
+// block could not be carried past what is on screen. The speed grows the closer
+// the pointer is to the edge; it is pointer-driven, so it needs no motion setting.
+export const EDGE_ZONE = 90;      // px from the window edge where scrolling starts
+export const EDGE_MAX_SPEED = 22; // px per frame at the very edge
+
+export function edgeScrollSpeed(y: number, height: number): number {
+  const zone = Math.min(EDGE_ZONE, height / 4);
+  if (zone <= 0) return 0;
+  if (y < zone) return -Math.ceil(EDGE_MAX_SPEED * Math.min(1, (zone - y) / zone));
+  if (y > height - zone) return Math.ceil(EDGE_MAX_SPEED * Math.min(1, (y - (height - zone)) / zone));
+  return 0;
+}
+
+export function useEdgeAutoScroll(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    let y: number | null = null;
+    let frame = 0;
+    const onOver = (e: DragEvent) => { y = e.clientY; };
+    const tick = () => {
+      const speed = y == null ? 0 : edgeScrollSpeed(y, window.innerHeight);
+      if (speed) window.scrollBy(0, speed);
+      frame = window.requestAnimationFrame(tick);
+    };
+    // Capture: the blocks stop `dragover` from bubbling.
+    window.addEventListener("dragover", onOver, true);
+    frame = window.requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener("dragover", onOver, true);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [active]);
+}
+
 // Edit-mode wrapper: a control bar (drag handle + hide/show) above each item.
 // Reordering is done by dragging the grip onto another item (native HTML5
 // drag-and-drop). Hidden items stay listed (dimmed) so they can be toggled
@@ -104,6 +140,7 @@ export function EditBlock<Id extends string>({
   const hidden = ctrl.hidden.has(id);
   const dragging = ctrl.dragId === id;
   const over = ctrl.overId === id && ctrl.dragId !== id && ctrl.dragId != null;
+  useEdgeAutoScroll(dragging);
   const sz = compact ? 15 : 18;
   return (
     <div
