@@ -471,6 +471,17 @@ the Client ID. Then **Sync** on demand.
 enter the server URL (`http://<host>:8989` / `:7878`) and the API key (Settings → General →
 Security). They are *calendar* sources, not watch history: see [Continue watching](#continue-watching).
 
+**Running series (Sonarr)** — on a Sonarr connection, **Running series** lists the series Sonarr
+reports as *continuing* and monitored (refreshed by every sync), with poster, network, episodes on
+disk and the next airing. **Tag** a series there to add it to WatchVault: only series you tag are
+created in the catalog (by their TMDB id, enrichment queued), and an existing series, such as one
+watched through Plex, is reused rather than duplicated. A series Sonarr has no TMDB id for is listed
+but cannot be tagged. Tags are the normal household tags (Settings → Tags); removing a tag leaves the
+title in place. Tagged series are kept up to date: a sync queues a TMDB refresh for a tagged series
+that has no episodes yet or that Sonarr says airs again after the last episode the catalog knows
+(at most once a day per title). Merging two duplicate titles now keeps their tags. API:
+`GET /api/connections/<id>/series`, `POST|DELETE /api/connections/<id>/series/<sonarr_id>/tags/<tag_id>`.
+
 **Other services** — export your data (manual CSV or a GDPR/data request) and import it via
 the *Generic CSV/JSON* provider. The generic adapter auto-detects common column names
 (`title`, `date`, `season`, `episode`, `duration`/`minutes`, `progress`, …).

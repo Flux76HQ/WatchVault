@@ -965,3 +965,7 @@ input[type="range"] {
 }
 input[type="range"]:focus { box-shadow: none; }
 input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+/* A connection row carries up to six buttons: let them wrap under the name instead of overflowing on a phone. */
+.conn-row { flex-wrap: wrap; row-gap: var(--space-2); }
+.conn-row > .col { flex: 1 1 220px; min-width: 0; }

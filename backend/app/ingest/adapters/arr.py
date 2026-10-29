@@ -14,6 +14,7 @@ import datetime as dt
 
 import requests
 
+from ...util import title_key
 from .base import SourceAdapter
 
 TIMEOUT = 20
@@ -25,6 +26,14 @@ def _int(value) -> int | None:
     except (ValueError, TypeError):
         return None
     return n or None  # Sonarr/Radarr report an unknown id as 0
+
+
+def _count(value) -> int | None:
+    """A count, where 0 is a real value (unlike an id)."""
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
 
 
 def _parse_dt(value) -> dt.datetime | None:
@@ -99,6 +108,30 @@ def radarr_item(raw: dict) -> dict | None:
     )
 
 
+def sonarr_series(raw: dict) -> dict | None:
+    """One Sonarr series -> a running-series row, or ``None`` unless it is *running*:
+    status ``continuing``, monitored, with an id and a title."""
+    if raw.get("status") != "continuing" or not raw.get("monitored"):
+        return None
+    sonarr_id, title = _int(raw.get("id")), (raw.get("title") or "").strip()
+    if sonarr_id is None or not title:
+        return None
+    stats = raw.get("statistics") or {}
+    return {
+        "sonarr_id": sonarr_id, "title": title, "normalized_key": title_key(title, "series"),
+        "year": _int(raw.get("year")), "status": "continuing", "monitored": True,
+        "tmdb_id": _int(raw.get("tmdbId")), "tvdb_id": _int(raw.get("tvdbId")),
+        "imdb_id": raw.get("imdbId") or None, "network": raw.get("network") or None,
+        "poster_url": _poster(raw.get("images")),
+        "next_airing": _parse_dt(raw.get("nextAiring") or stats.get("nextAiring")),
+        "previous_airing": _parse_dt(raw.get("previousAiring") or stats.get("previousAiring")),
+        "season_count": _count(stats.get("seasonCount")),
+        "episode_file_count": _count(stats.get("episodeFileCount")),
+        "episode_count": _count(stats.get("episodeCount")),
+        "total_episode_count": _count(stats.get("totalEpisodeCount")),
+    }
+
+
 class _ArrAdapter(SourceAdapter):
     ingest_type = "api"
     produces = "calendar"
@@ -112,22 +145,27 @@ class _ArrAdapter(SourceAdapter):
     _params: dict = {}
     _normalise = staticmethod(lambda raw: None)
 
-    def fetch_calendar(self, config: dict, start: dt.date, end: dt.date) -> list[dict]:
+    def _get_list(self, config: dict, path: str, what: str, params: dict | None = None) -> list:
+        """GET a JSON *array* from the instance, with clear errors for a missing config,
+        a rejected key and an unexpected body."""
         base = (config.get("base_url") or "").rstrip("/")
         key = config.get("api_key")
         if not base or not key:
             raise ValueError(f"{self.display_name} connection requires base_url and api_key")
-        resp = requests.get(
-            f"{base}/api/v3/calendar", headers={"X-Api-Key": key, "Accept": "application/json"},
-            params={"start": start.isoformat(), "end": end.isoformat(),
-                    "unmonitored": "false", **self._params},
-            timeout=TIMEOUT)
+        resp = requests.get(f"{base}{path}", headers={"X-Api-Key": key, "Accept": "application/json"},
+                            params=params, timeout=TIMEOUT)
         if resp.status_code in (401, 403):
             raise ValueError(f"{self.display_name} rejected the API key (HTTP {resp.status_code})")
         resp.raise_for_status()
         payload = resp.json()
         if not isinstance(payload, list):
-            raise ValueError(f"{self.display_name} returned an unexpected calendar response")
+            raise ValueError(f"{self.display_name} returned an unexpected {what} response")
+        return payload
+
+    def fetch_calendar(self, config: dict, start: dt.date, end: dt.date) -> list[dict]:
+        payload = self._get_list(
+            config, "/api/v3/calendar", "calendar",
+            {"start": start.isoformat(), "end": end.isoformat(), "unmonitored": "false", **self._params})
         items, seen = [], set()
         for raw in payload:
             item = self._normalise(raw)
@@ -140,8 +178,18 @@ class _ArrAdapter(SourceAdapter):
 class SonarrAdapter(_ArrAdapter):
     id = "sonarr_api"
     display_name = "Sonarr"
+    lists_series = True
     _params = {"includeSeries": "true", "includeEpisodeFile": "true"}
     _normalise = staticmethod(sonarr_item)
+
+    def fetch_series(self, config: dict) -> list[dict]:
+        rows, seen = [], set()
+        for raw in self._get_list(config, "/api/v3/series", "series"):
+            row = sonarr_series(raw)
+            if row and row["sonarr_id"] not in seen:
+                seen.add(row["sonarr_id"])
+                rows.append(row)
+        return rows
 
 
 class RadarrAdapter(_ArrAdapter):
